@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """Isolated GFW UDP logging, packet capture and NFQUEUE trials."""
 import json, os, pathlib, socket, subprocess, time, urllib.error, urllib.parse, urllib.request
-import sys
+import ssl, sys
 
 if os.environ.get("GFW_QUALIFICATION_LAB") != "1":
     raise SystemExit("Run only inside a fresh isolated Linux lab with GFW_QUALIFICATION_LAB=1.")
 phase = sys.argv[1] if len(sys.argv) == 2 else "standard"
-if phase not in {"standard", "extended", "immediate", "patched", "soak", "long"} or len(sys.argv) > 2:
-    raise SystemExit("Usage: load.py [standard|extended|immediate|patched|soak|long]")
+if phase not in {"standard", "extended", "immediate", "patched", "soak", "long", "nfqueue", "nfqueue-long"} or len(sys.argv) > 2:
+    raise SystemExit("Usage: load.py [standard|extended|immediate|patched|soak|long|nfqueue|nfqueue-long]")
 if pathlib.Path('/var/lib/gfw/admin.token').exists():
     raise SystemExit("The load lab requires a fresh GFW data directory.")
 state=pathlib.Path('/state')
+nfq_long = phase == "nfqueue-long"
+nfq_pauses = nfq_long and os.environ.get("GFW_QUALIFICATION_NFQ_PAUSES") == "1"
+base_url = 'https://127.0.0.1:8443' if nfq_long else 'http://127.0.0.1:8088'
+tls = ssl._create_unverified_context() if nfq_long else None  # Disposable, self-signed VM fixture.
+
 def sh(*args):
     p=subprocess.run(args,text=True,capture_output=True)
     if p.returncode: raise AssertionError((args,p.stderr))
@@ -60,8 +65,51 @@ os.execv('/usr/bin/tcpdump', ['tcpdump', *args])
 """)
     wrapper.chmod(0o755)
     tcpdump_args = ['-tcpdump', str(wrapper)]
-agent=proc('agent',['/usr/sbin/gfw-agent',*tcpdump_args,'-enable-apply','-enable-traffic','-enable-capture','-enable-ids','-lan-interface','lan0','-management-port','8443','-state-dir','/var/lib/gfw-agent','-socket','/state/agent.sock'])
-panel=proc('panel',['/usr/sbin/gfwd','-listen','127.0.0.1:8088','-data-dir','/var/lib/gfw','-agent-socket','/state/agent.sock'])
+nfq_args = []
+native_nfq = os.environ.get("GFW_QUALIFICATION_NFQ_NATIVE") == "1"
+if phase == "nfqueue" and not native_nfq:
+    pathlib.Path('/nfq-profile').write_text('1 1024')
+    for name, program in {
+        'suricata': """#!/usr/bin/python3
+import os
+import pathlib
+import sys
+args = sys.argv[1:]
+if '-q' in args:
+    count, pending = map(int, pathlib.Path('/nfq-profile').read_text().split())
+    base = int(args[args.index('-q')+1])
+    for queue in range(base+1,base+count):
+        args.extend(['-q',str(queue)])
+    args.extend(['--set', 'max-pending-packets='+str(pending)])
+os.execv('/usr/bin/suricata', ['suricata', *args])
+""",
+        'nft': """#!/usr/bin/python3
+import os
+import pathlib
+import subprocess
+import sys
+args=sys.argv[1:]
+if '-f' not in args:
+    os.execv('/usr/sbin/nft', ['nft', *args])
+raw=sys.stdin.read()
+count,_=map(int,pathlib.Path('/nfq-profile').read_text().split())
+if count>1:
+    raw=raw.replace('queue num 43013',f'queue to symhash mod {count} offset 43013')
+raise SystemExit(subprocess.run(['/usr/sbin/nft',*args],input=raw,text=True).returncode)
+""",
+    }.items():
+        wrapper = pathlib.Path('/usr/local/bin') / (name + '-qualification')
+        wrapper.write_text(program)
+        wrapper.chmod(0o755)
+        nfq_args += ['-' + name, str(wrapper)]
+agent=proc('agent',['/usr/sbin/gfw-agent',*tcpdump_args,*nfq_args,'-enable-apply','-enable-traffic','-enable-capture','-enable-ids','-lan-interface','lan0','-management-port','8443','-state-dir','/var/lib/gfw-agent','-socket','/state/agent.sock'])
+panel_args = ['-listen','127.0.0.1:8088']
+if nfq_long:
+    cert, key = state/'lab.crt', state/'lab.key'
+    sh('openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1',
+       '-subj','/CN=GFW qualification VM','-keyout',str(key),'-out',str(cert))
+    panel_args = ['-listen','0.0.0.0:8443','-tls-cert',str(cert),'-tls-key',str(key)]
+panel=proc('panel',['/usr/sbin/gfwd',*panel_args,'-data-dir','/var/lib/gfw','-agent-socket','/state/agent.sock'])
 # Native payloads carry a sequence and a distinct marker. Separate UDP tuples
 # prevent a matching IPS signature from poisoning the benign flow.
 sender=r'''
@@ -126,10 +174,10 @@ def result(r):
     assert r.returncode==0
     return json.loads(stdout)
 def request(path,method='GET',body=None,headers=None):
-    req=urllib.request.Request('http://127.0.0.1:8088/api/v1'+path,method=method,
+    req=urllib.request.Request(base_url+'/api/v1'+path,method=method,
         data=None if body is None else json.dumps(body).encode(),
         headers={'Authorization':'Bearer '+token,'Content-Type':'application/json',**(headers or {})})
-    try: return urllib.request.urlopen(req,timeout=45)
+    try: return urllib.request.urlopen(req,timeout=45,context=tls)
     except urllib.error.HTTPError as e: raise AssertionError((path,e.code,e.read().decode())) from e
 def api(path,method='GET',body=None,headers=None):
     with request(path,method,body,headers) as r: return json.load(r),r.headers
@@ -146,8 +194,38 @@ def capture_state(id):
 def counters():
     data=json.loads(sh('nft','-j','list','counter','inet','gfw','gfw_traffic_seen'))['nftables']
     return data[-1]['counter']['packets']
+def sensor_pid():
+    for process in pathlib.Path('/proc').glob('[0-9]*'):
+        try:
+            if (process/'comm').read_text().strip() == 'Suricata-Main':
+                return int(process.name)
+        except FileNotFoundError:
+            pass
+    raise AssertionError('Suricata process not found')
+
+def queue_listener():
+    for line in pathlib.Path('/proc/net/netfilter/nfnetlink_queue').read_text().splitlines():
+        number, listener, *_ = line.split()
+        if number == '43013':
+            return int(listener)
+    return None
+
+def enable_post_ips_counters():
+    monitor = '''table inet lab_measure {
+  counter clean {}
+  counter attack {}
+  chain forwarded {
+    type filter hook forward priority 30; policy accept;
+    udp dport 41001 @th,64,72 0x4746572d414c4c4f57 counter name "clean"
+    udp dport 41001 @th,64,72 0x4746572d424c4f434b counter name "attack"
+  }
+}'''
+    subprocess.run(['/usr/sbin/nft','-f','-'],input=monitor,text=True,check=True)
+def forwarded():
+    data=json.loads(sh('/usr/sbin/nft','-j','list','counters','table','inet','lab_measure'))['nftables']
+    return {item['counter']['name']:item['counter']['packets'] for item in data if 'counter' in item}
 try:
-    wait(lambda:urllib.request.urlopen('http://127.0.0.1:8088/healthz',timeout=1).status==200)
+    wait(lambda:urllib.request.urlopen(base_url+'/healthz',timeout=1,context=tls).status==200)
     token=(pathlib.Path('/var/lib/gfw/admin.token')).read_text().strip()
     wait(lambda:stat()['conntrack'] and stat()['nflog'])
     wait(lambda:ch('SELECT 1')=='1')
@@ -305,7 +383,136 @@ try:
                 assert rx['good_received']==rx['bad_received']==0,rx
             else:
                 assert rx['good_received']>0 and rx['bad_received']>0,rx
-    elif phase in {"soak", "long"}:
+    elif phase == "nfqueue":
+        import signal
+        queue_file = pathlib.Path('/proc/net/netfilter/nfnetlink_queue')
+        enable_post_ips_counters()
+        def queues():
+            result={}
+            for line in queue_file.read_text().splitlines():
+                fields=list(map(int,line.split()))
+                if 43013 <= fields[0] <= 43016:
+                    result[fields[0]]=dict(portid=fields[1],waiting=fields[2],kernel_dropped=fields[5],
+                                           user_dropped=fields[6],sequence=fields[7])
+            return result
+        def apply_profile(name, count, pending, trial):
+            if not native_nfq:
+                pathlib.Path('/nfq-profile').write_text(f'{count} {pending}')
+            activate('/ids',{'enabled':True,'mode':'ips','failure_policy':'closed','interfaces':['lan0'],
+                'home_net':['192.0.2.0/24'],
+                'rules':f'drop udp $HOME_NET any -> any 41001 (msg:"Lab {name} {trial}"; content:"GFW-BLOCK"; depth:9; sid:1000011; rev:1;)'},f'nfq-trial-{trial:02}')
+            assert set(queues())==set(range(43013,43013+count)),queues()
+            rules=sh('/usr/sbin/nft','list','table','inet','gfw_ips')
+            assert 'bypass' not in rules,rules
+            assert ('symhash' in rules)==(count>1),rules
+        single_sender=sender
+        spread_sender=sender[:sender.index('good=socket.socket')]+r'''
+start=time.monotonic()
+sockets=[]
+for i in range(n):
+    if i%16==0:
+        delay=start+i/rate-time.monotonic()
+        if delay>0: time.sleep(delay)
+    if i%16000==0:
+        for s in sockets:
+            s.close()
+        sockets=[]
+        for slot in range(64):
+            s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+            s.bind(('192.0.2.2',10000+(i//16000%700)*64+slot))
+            sockets.append(s)
+    evil=bool(i%20==0)
+    s=sockets[(i//20%32)*2+evil]
+    s.sendto((b'GFW-BLOCK' if evil else b'GFW-ALLOW')+struct.pack('!I',i)+b'.'*499,(host,port))
+print(json.dumps(dict(sent=n,bad=(n+19)//20,elapsed=time.monotonic()-start)))
+'''
+        profiles=[('stock',1,1024),('deeper',1,4096),('parallel',4,1024),('parallel-deeper',4,4096)]
+        trials = [(name,count,pending,spread,pause) for spread,pause,order in
+                  [(False,0,profiles),(True,0,profiles[::-1]),(False,100,profiles[1:]+profiles[:1])]
+                  for name,count,pending in order]
+        if native_nfq:
+            trials = [('native',1,4096,False,0),('native',1,4096,False,100)]
+        for trial, (name,count,pending,spread,pause_ms) in enumerate(trials,1):
+            sender=spread_sender if spread else single_sender
+            apply_profile(name,count,pending,trial)
+            before=queues()
+            before_forward=forwarded()
+            seen=counters()
+            r=receive(41001)
+            cfg={'interface':'lan0','backend':'packet','direction':'in','family':'ip','protocol':'udp',
+                 'source':'192.0.2.2','destination':'198.51.100.2','destination_ports':'41001','seconds':15,
+                 'snaplen':64,'max_packets':0,'max_mib':256,'retention_hours':1}
+            session,_=api('/captures','POST',cfg)
+            time.sleep(.35)
+            tx=send(100000,1200000,41001,mixed=1,background=True,rotate=1200)
+            peak={q:0 for q in before}
+            pause_at = time.monotonic() + 5
+            while tx.poll() is None:
+                if pause_ms and time.monotonic() >= pause_at:
+                    pid = sensor_pid()
+                    os.kill(pid,signal.SIGSTOP)
+                    try:
+                        time.sleep(pause_ms/1000)
+                        for q, stats in queues().items():
+                            peak[q]=max(peak[q],stats['waiting'])
+                    finally:
+                        os.kill(pid,signal.SIGCONT)
+                    pause_at = float('inf')
+                for q, stats in queues().items():
+                    peak[q]=max(peak[q],stats['waiting'])
+                time.sleep(.05)
+            sent=result(tx)
+            rx=result(r)
+            after=queues()
+            after_forward=forwarded()
+            observed=counters()-seen
+            verdict={key:after_forward[key]-value for key,value in before_forward.items()}
+            assert observed==sent['sent'] and verdict['attack']==rx['bad_received']==0,(observed,verdict,rx,sent)
+            delta={q:{key:after[q][key]-before[q][key] for key in ('kernel_dropped','user_dropped','sequence')}
+                   for q in before}
+            api('/captures/'+session['id']+'/stop','POST')
+            capture=wait(lambda:(value if (value:=capture_state(session['id']))['state']!='running' else None))
+            api('/captures/'+session['id'],'DELETE')
+            emit('nfq_compare',trial=trial,profile=name,queues=count,pending=pending,spread=spread,pause_ms=pause_ms,
+                 **sent,**rx,forwarded=verdict,firewall_seen=observed,queue_delta=delta,
+                 queue_peak=peak,capture_packets=capture['packets'],capture_dropped=capture.get('dropped'),traffic=stat())
+        sender=single_sender
+        count = 1 if native_nfq else 4
+        apply_profile('native' if native_nfq else 'parallel-deeper',count,4096,99)
+        pid=sensor_pid()
+        before=forwarded()
+        os.kill(pid,signal.SIGSTOP)
+        try:
+            r=receive(41001)
+            sent=send(100000,150000,41001,mixed=1,rotate=150)
+            held=queues()
+            if native_nfq:
+                assert held[43013]['waiting'] == 16384,held
+            assert forwarded()==before and sum(q['kernel_dropped']+q['user_dropped'] for q in held.values())>0,held
+            rx=result(r)
+            assert rx['good_received']==rx['bad_received']==0,rx
+            emit('nfq_full_closed',**sent,**rx,queue=held,forwarded_during_stop=0)
+        finally:
+            os.kill(pid,signal.SIGCONT)
+        os.kill(agent.pid,signal.SIGSTOP)
+        try:
+            os.kill(pid,signal.SIGKILL)
+            wait(lambda:not queues(),5)
+            before=forwarded()
+            r=receive(41001)
+            sent=send(100000,100000,41001,mixed=1,rotate=100)
+            rx=result(r)
+            assert forwarded()==before and rx['good_received']==rx['bad_received']==0,rx
+            # Exercise the LAN anti-lockout rule while the IPS listener is absent.
+            with socket.socket() as listener:
+                listener.bind(('192.0.2.1',8443))
+                listener.listen()
+                sh('ip','netns','exec','src','python3','-c',
+                   'import socket; socket.create_connection(("192.0.2.1", 8443), timeout=2).close()')
+            emit('nfq_no_listener_closed',**sent,**rx,lan_management_reachable=True)
+        finally:
+            os.kill(agent.pid,signal.SIGCONT)
+    elif phase in {"soak", "long", "nfqueue-long"}:
         if phase == "soak":
             def packet_writer():
                 for child in pathlib.Path('/proc').glob('[0-9]*'):
@@ -340,13 +547,72 @@ try:
             keys = ('rx_packets','rx_dropped','rx_missed_errors','tx_packets','tx_dropped')
             return {iface:{key:int(pathlib.Path('/sys/class/net',iface,'statistics',key).read_text())
                            for key in keys} for iface in ('lan0','wan0')}
+        windows, packets, pairs = (3, 9000000, 9000) if phase == "soak" else (12, 32000000, 18000)
+        if nfq_pauses:
+            windows, packets, pairs = 7, 18000000, 18000
+        duration = packets // 100000
+        if nfq_long:
+            enable_post_ips_counters()
+            before_forward = forwarded()
+            release = api('/status')[0]['version']
+            listener = queue_listener()
+            queue_start = api('/ids/state')[0]['runtime']['queue']
+            assert listener is not None and queue_start and queue_start['waiting']==0,queue_start
+            assert 'bypass' not in sh('/usr/sbin/nft','list','table','inet','gfw_ips')
+            lan_probe = r'''
+import json, pathlib, ssl, sys, time, urllib.request
+token = pathlib.Path('/var/lib/gfw/admin.token').read_text().strip()
+req = urllib.request.Request('https://192.0.2.1:8443/api/v1/auth/me',
+                             headers={'Authorization': 'Bearer '+token})
+context = ssl._create_unverified_context()
+limit = time.monotonic() + int(sys.argv[1])
+attempted = passed = 0
+errors = []
+max_ms = 0
+print('ready', flush=True)
+while time.monotonic() < limit:
+    started = time.monotonic()
+    attempted += 1
+    try:
+        with urllib.request.urlopen(req, timeout=.8, context=context) as response:
+            if json.load(response)['role'] != 'admin':
+                raise ValueError('unexpected account role')
+        passed += 1
+        max_ms = max(max_ms, round(1000 * (time.monotonic() - started), 3))
+    except (OSError, ValueError) as error:
+        if len(errors) < 10:
+            errors.append(str(error))
+    time.sleep(max(0, 1 - (time.monotonic() - started)))
+print(json.dumps(dict(attempted=attempted, passed=passed, max_ms=max_ms, errors=errors)),flush=True)
+'''
+            lan = proc('lan',['ip','netns','exec','src','python3','-c',lan_probe,str(duration+4)],
+                       stdout=subprocess.PIPE,text=True)
+            assert lan.stdout.readline().strip()=='ready'
+            emit('nfq_long_start',version=release,policy='fail-closed',target_pps=100000,packets=packets,forced_pauses=nfq_pauses)
         before=stat()
         udp_before=udp_stats()
         links_before=link_stats()
         seen=counters()
         r=receive(41001)
-        windows, packets, pairs = (3, 9000000, 9000) if phase == "soak" else (12, 32000000, 18000)
         tx=send(100000,packets,41001,mixed=1,background=True,rotate=pairs)
+        if nfq_pauses:
+            pause_worker = r'''
+import json, os, signal, sys, time
+pid = int(sys.argv[1])
+start = time.monotonic()
+pauses = []
+for second in range(15, 180, 15):
+    time.sleep(max(0, start + second - time.monotonic()))
+    before = time.monotonic()
+    os.kill(pid, signal.SIGSTOP)
+    try:
+        time.sleep(.1)
+    finally:
+        os.kill(pid, signal.SIGCONT)
+    pauses.append(round((time.monotonic() - before)*1000, 3))
+print(json.dumps({'durations_ms': pauses}))
+'''
+            pauses = proc('pauses',['python3','-c',pause_worker,str(sensor_pid())],stdout=subprocess.PIPE,text=True)
         for window in range(1,windows+1):
             cfg={'interface':'lan0','backend':'packet','direction':'in','family':'ip','protocol':'udp',
                  'source':'192.0.2.2','destination':'198.51.100.2','destination_ports':'41001','seconds':25,
@@ -363,9 +629,24 @@ try:
         sent=json.loads(stdout)
         rx=result(r)
         wait(lambda:stat()['queued']==0,25)
-        emit('soak',**sent,**rx,firewall_seen=counters()-seen,traffic_before=before,traffic_after=stat(),
-             queue=api('/ids/state')[0]['runtime']['queue'],clickhouse_counts=db_totals(),
-             udp_before=udp_before,udp_after=udp_stats(),links_before=links_before,links_after=link_stats())
+        observed=counters()-seen
+        queue=api('/ids/state')[0]['runtime']['queue']
+        extras={}
+        if nfq_long:
+            after_forward=forwarded()
+            verdict={key:after_forward[key]-value for key,value in before_forward.items()}
+            lan_result=result(lan)
+            assert observed==sent['sent'] and verdict['attack']==0, (observed,sent,verdict)
+            assert 99000<=sent['sent']/sent['elapsed']<=101000, sent
+            assert queue and queue_listener()==listener and queue['waiting']==0,queue
+            assert lan_result['attempted']>=duration-10,lan_result
+            extras=dict(version=release,forwarded=verdict,queue_start=queue_start,lan=lan_result)
+            if nfq_pauses:
+                extras['forced_pauses']=result(pauses)['durations_ms']
+                assert len(extras['forced_pauses'])==11,extras
+        emit('nfq_long' if nfq_long else 'soak',**sent,**rx,firewall_seen=observed,traffic_before=before,traffic_after=stat(),
+             queue=queue,clickhouse_counts=db_totals(),udp_before=udp_before,udp_after=udp_stats(),
+             links_before=links_before,links_after=link_stats(),**extras)
         assert rx['bad_received']==0
     else:
         for rate, repeats in [(40000,3),(100000,3)]:

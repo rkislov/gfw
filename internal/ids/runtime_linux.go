@@ -216,6 +216,12 @@ func (r *Runtime) stage(c Config) (string, error) {
 
 func render(c Config, dir string) string {
 	var b strings.Builder
+	pendingPackets := 1024
+	if c.Inline() {
+		// Suricata 8 derives the NFQUEUE limit as four times this value.
+		// Leave room for short scheduler stalls while preserving the configured verdict policy.
+		pendingPackets = 4096
+	}
 	fmt.Fprintf(&b, `%%YAML 1.1
 ---
 vars:
@@ -228,7 +234,7 @@ rule-files: [local.rules]
 classification-file: %q
 reference-config-file: %q
 runmode: workers
-max-pending-packets: 1024
+max-pending-packets: %d
 unix-command:
   enabled: no
 security:
@@ -263,7 +269,7 @@ outputs:
             metadata: no
             payload: no
             packet: no
-`, "["+strings.Join(c.HomeNet, ",")+"]", filepath.Join(dir, "output"), dir, filepath.Join(dir, "classification.config"), filepath.Join(dir, "reference.config"), yesNo(c.Inline()), filepath.Join(dir, "eve.sock"))
+`, "["+strings.Join(c.HomeNet, ",")+"]", filepath.Join(dir, "output"), dir, filepath.Join(dir, "classification.config"), filepath.Join(dir, "reference.config"), pendingPackets, yesNo(c.Inline()), filepath.Join(dir, "eve.sock"))
 	if c.Inline() {
 		fmt.Fprintf(&b, "nfq:\n  mode: accept\n  fail-open: %s\n", yesNo(c.FailurePolicy == "open"))
 		return b.String()

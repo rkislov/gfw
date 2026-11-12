@@ -4,10 +4,10 @@ import hashlib,http.client,json,os,signal,socket,sqlite3,ssl,subprocess,time,url
 from pathlib import Path
 arch={'aarch64':'arm64','x86_64':'amd64'}[os.uname().machine]
 rpmarch={'arm64':'aarch64','amd64':'x86_64'}[arch]
-package='/work/dist/gfw-0.22.2-1.altp10.'+rpmarch+'.rpm'
+package='/work/dist/gfw-0.22.3-1.altp10.'+rpmarch+'.rpm'
 def sh(*args):return subprocess.run(args,check=True,text=True,capture_output=True).stdout
 sh('rpm','-Uvh',package)
-assert sh('rpm','-q','gfw').strip().startswith('gfw-0.22.2-1.altp10')
+assert sh('rpm','-q','gfw').strip().startswith('gfw-0.22.3-1.altp10')
 for name in ['gfwd','gfw-agent']:
  assert hashlib.sha256(Path('/usr/sbin/'+name).read_bytes()).digest()==hashlib.sha256(Path('/work/bin/linux-'+arch+'/'+name).read_bytes()).digest()
 assert 'gfw' in sh('getent','passwd','gfw')
@@ -32,7 +32,7 @@ try:
   h={'Authorization':'Bearer '+key,'Content-Type':'application/json'};h.update(headers or {})
   req=urllib.request.Request('http://127.0.0.1:8088/api/v1'+path,method=method,data=None if data is None else json.dumps(data).encode(),headers=h)
   with urllib.request.urlopen(req,timeout=90) as response:return json.load(response),response.headers
- assert api('GET','/status')[0]['version']=='0.22.2'
+ assert api('GET','/status')[0]['version']=='0.22.3'
  assert api('GET','/ids/state')[0]['enabled'] and not api('GET','/ids/state')[0]['runtime']['running']
  ids_cfg,_=api('GET','/ids/config')
  assert not ids_cfg['config']['enabled'] and api('GET','/ids/alerts')[0]==[]

@@ -84,7 +84,7 @@ def main():
     parser.add_argument('--no-nflog-conntrack', action='store_true')
     options = parser.parse_args()
     rpmarch = os.uname().machine
-    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.2-1.altp10.{rpmarch}.rpm')
+    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.3-1.altp10.{rpmarch}.rpm')
     run('ip', 'netns', 'add', 'traffic-peer')
     run('ip', 'link', 'add', 'lan0', 'type', 'veth', 'peer', 'name', 'peer0')
     run('ip', 'link', 'set', 'peer0', 'netns', 'traffic-peer')

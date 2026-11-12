@@ -110,7 +110,7 @@ with socket.socket(family,socket.SOCK_DGRAM) as s:
 
 
 def main():
-    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.2-1.altp10.{os.uname().machine}.rpm')
+    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.3-1.altp10.{os.uname().machine}.rpm')
     run('ip', 'link', 'set', 'lo', 'up')
     fixture_port('lan0', 'client', LAN, '192.0.2.2')
     fixture_port('wan0', 'server', '198.51.100.1', WAN)

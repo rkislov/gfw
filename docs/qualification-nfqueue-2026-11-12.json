@@ -1,0 +1,818 @@
+{
+  "date": "2026-11-12",
+  "stand": {
+    "category": "stand",
+    "kernel": "5.10.274-std-def-alt1",
+    "suricata": "This is Suricata version 8.0.4 RELEASE",
+    "clickhouse": "25.8.12.129",
+    "cpus": 4,
+    "memory_kib": 4017228,
+    "payload_bytes": 512,
+    "os": "ALT Linux p10",
+    "arch": "aarch64",
+    "topology": "QEMU/HVF, veth",
+    "physical_nic": false
+  },
+  "workload": {
+    "target_pps": 100000,
+    "protocol": "UDP/IPv4",
+    "matching_signature_percent": 5,
+    "pcap_snaplen_bytes": 64,
+    "pcap_storage": "guest initramfs",
+    "ips_policy": "fail-closed"
+  },
+  "comparisons": {
+    "version": "0.22.2",
+    "trials": [
+      {
+        "category": "nfq_compare",
+        "trial": 1,
+        "profile": "stock",
+        "queues": 1,
+        "pending": 1024,
+        "spread": false,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999990130999999,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 16
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 1199651,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 2,
+        "profile": "deeper",
+        "queues": 1,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999964547000001,
+        "good_received": 1139424,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 2632
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 36,
+          "oldest_ms": 1794460943094,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 2399302,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 3,
+        "profile": "parallel",
+        "queues": 4,
+        "pending": 1024,
+        "spread": false,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999951298,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 312700
+          },
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 284750
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 309350
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 293200
+          }
+        },
+        "queue_peak": {
+          "43016": 14,
+          "43013": 16,
+          "43014": 12,
+          "43015": 15
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 23,
+          "oldest_ms": 1794460959842,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 3598953,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 4,
+        "profile": "parallel-deeper",
+        "queues": 4,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999978130999999,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 312700
+          },
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 284750
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 309350
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 293200
+          }
+        },
+        "queue_peak": {
+          "43016": 15,
+          "43013": 23,
+          "43014": 14,
+          "43015": 14
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 23,
+          "oldest_ms": 1794460975585,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 4798604,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 5,
+        "profile": "parallel-deeper",
+        "queues": 4,
+        "pending": 4096,
+        "spread": true,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999973964000006,
+        "good_received": 1137757,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 310475
+          },
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 280200
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 308500
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 300825
+          }
+        },
+        "queue_peak": {
+          "43016": 18,
+          "43013": 14,
+          "43014": 18,
+          "43015": 27
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 11,
+          "oldest_ms": 1794460991329,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 5998255,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 6,
+        "profile": "parallel",
+        "queues": 4,
+        "pending": 1024,
+        "spread": true,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999967589000008,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 310475
+          },
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 280200
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 308500
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 300825
+          }
+        },
+        "queue_peak": {
+          "43016": 16,
+          "43013": 16,
+          "43014": 15,
+          "43015": 16
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 11,
+          "oldest_ms": 1794461007010,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 7197906,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 7,
+        "profile": "deeper",
+        "queues": 1,
+        "pending": 4096,
+        "spread": true,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999892172999992,
+        "good_received": 1138152,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 402
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 12,
+          "oldest_ms": 1794461023136,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 8397557,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 8,
+        "profile": "stock",
+        "queues": 1,
+        "pending": 1024,
+        "spread": true,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.99995400600001,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 16
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 9597208,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 9,
+        "profile": "deeper",
+        "queues": 1,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 100,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 12.00042363099999,
+        "good_received": 1135618,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 10030
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 37,
+          "oldest_ms": 1794461053070,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 10796858,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 10,
+        "profile": "parallel",
+        "queues": 4,
+        "pending": 1024,
+        "spread": false,
+        "pause_ms": 100,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999983089000011,
+        "good_received": 1136110,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1138306,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 312700
+          },
+          "43013": {
+            "kernel_dropped": 1744,
+            "user_dropped": 0,
+            "sequence": 283006
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 309350
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 293200
+          }
+        },
+        "queue_peak": {
+          "43016": 2150,
+          "43013": 4096,
+          "43014": 1900,
+          "43015": 152
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 33,
+          "oldest_ms": 1794461068976,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 11996509,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 11,
+        "profile": "parallel-deeper",
+        "queues": 4,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 100,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999959546999975,
+        "good_received": 1134797,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43016": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 312700
+          },
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 284750
+          },
+          "43014": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 309350
+          },
+          "43015": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 293200
+          }
+        },
+        "queue_peak": {
+          "43016": 2257,
+          "43013": 5796,
+          "43014": 1808,
+          "43015": 161
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 11,
+          "oldest_ms": 1794461085538,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 13196160,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 12,
+        "profile": "stock",
+        "queues": 1,
+        "pending": 1024,
+        "spread": false,
+        "pause_ms": 100,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999962423,
+        "good_received": 1134372,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1134372,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 5924,
+            "user_dropped": 0,
+            "sequence": 1194076
+          }
+        },
+        "queue_peak": {
+          "43013": 4096
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 20,
+          "oldest_ms": 1794461101219,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 14395811,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      }
+    ],
+    "full": {
+      "category": "nfq_full_closed",
+      "sent": 150000,
+      "bad": 7500,
+      "elapsed": 1.4999370010000064,
+      "good_received": 0,
+      "bad_received": 0,
+      "queue": {
+        "43016": {
+          "portid": 4206795911,
+          "waiting": 16384,
+          "kernel_dropped": 15716,
+          "user_dropped": 0,
+          "sequence": 16384
+        },
+        "43013": {
+          "portid": 909,
+          "waiting": 16384,
+          "kernel_dropped": 19216,
+          "user_dropped": 0,
+          "sequence": 16384
+        },
+        "43014": {
+          "portid": 3381204270,
+          "waiting": 16384,
+          "kernel_dropped": 27166,
+          "user_dropped": 0,
+          "sequence": 16384
+        },
+        "43015": {
+          "portid": 3351037038,
+          "waiting": 16384,
+          "kernel_dropped": 22366,
+          "user_dropped": 0,
+          "sequence": 16384
+        }
+      },
+      "forwarded_during_stop": 0
+    },
+    "no_listener": {
+      "category": "nfq_no_listener_closed",
+      "sent": 100000,
+      "bad": 5000,
+      "elapsed": 0.9999461250000081,
+      "good_received": 0,
+      "bad_received": 0
+    }
+  },
+  "native": {
+    "version": "0.22.3~nfq1",
+    "trials": [
+      {
+        "category": "nfq_compare",
+        "trial": 1,
+        "profile": "native",
+        "queues": 1,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 0,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999956131000001,
+        "good_received": 1139850,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 27
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 107,
+          "oldest_ms": 1794461130748,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 1199651,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "nfq_compare",
+        "trial": 2,
+        "profile": "native",
+        "queues": 1,
+        "pending": 4096,
+        "spread": false,
+        "pause_ms": 100,
+        "sent": 1200000,
+        "bad": 60000,
+        "elapsed": 11.999951338999999,
+        "good_received": 1140000,
+        "bad_received": 0,
+        "forwarded": {
+          "clean": 1140000,
+          "attack": 0
+        },
+        "firewall_seen": 1200000,
+        "queue_delta": {
+          "43013": {
+            "kernel_dropped": 0,
+            "user_dropped": 0,
+            "sequence": 1200000
+          }
+        },
+        "queue_peak": {
+          "43013": 10020
+        },
+        "capture_packets": 1200000,
+        "capture_dropped": 0,
+        "traffic": {
+          "queued": 23,
+          "oldest_ms": 1794461147750,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 2399302,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      }
+    ],
+    "full": {
+      "category": "nfq_full_closed",
+      "sent": 150000,
+      "bad": 7500,
+      "elapsed": 1.499946584,
+      "good_received": 0,
+      "bad_received": 0,
+      "queue": {
+        "43013": {
+          "portid": 465,
+          "waiting": 16384,
+          "kernel_dropped": 133616,
+          "user_dropped": 0,
+          "sequence": 16384
+        }
+      },
+      "forwarded_during_stop": 0
+    },
+    "no_listener": {
+      "category": "nfq_no_listener_closed",
+      "sent": 100000,
+      "bad": 5000,
+      "elapsed": 0.9999404180000013,
+      "good_received": 0,
+      "bad_received": 0,
+      "lan_management_reachable": true
+    }
+  }
+}

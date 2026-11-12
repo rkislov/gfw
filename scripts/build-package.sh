@@ -2,7 +2,7 @@
 set -eu
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 gfw_arch=${GFW_PACKAGE_ARCH:-$(go env GOARCH)}
-gfw_version=${GFW_PACKAGE_VERSION:-0.22.2}
+gfw_version=${GFW_PACKAGE_VERSION:-0.22.3}
 gfw_target=${1:-altp10}
 case "$gfw_version" in ''|*[!a-zA-Z0-9.+~-]*) echo 'Invalid package version' >&2; exit 1;; esac
 case "$gfw_arch" in

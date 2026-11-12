@@ -55,7 +55,7 @@ def main():
     parser.add_argument('--mode', choices=('generic', 'native'), default='generic')
     parser.add_argument('--unit-capabilities', action='store_true')
     options = parser.parse_args()
-    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.2-1.altp10.{os.uname().machine}.rpm')
+    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.3-1.altp10.{os.uname().machine}.rpm')
     run('ip', 'link', 'set', 'lo', 'up')
     fixture_port('lan0', 'local', LAN, ['198.51.100.2'])
     fixture_port('wan0', 'external', WAN, ['192.0.2.' + str(i) for i in range(2, 6)])
