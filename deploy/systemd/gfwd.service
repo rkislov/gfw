@@ -1,0 +1,30 @@
+[Unit]
+Description=GFW management API and web interface
+Wants=gfw-agent.service
+After=gfw-agent.service
+
+[Service]
+Type=simple
+User=gfw
+Group=gfw
+UMask=0077
+Environment=GFW_ACME_LISTEN=
+EnvironmentFile=-/etc/gfw/controller.env
+RuntimeDirectory=gfw-auth
+RuntimeDirectoryMode=0750
+StateDirectory=gfw
+StateDirectoryMode=0700
+ExecStart=/usr/sbin/gfwd -data-dir /var/lib/gfw -vpn-auth-socket /run/gfw-auth/openvpn.sock -vpn-auth-key /etc/gfw/vpn-auth.key -agent-socket /run/gfw-agent/agent.sock -listen 0.0.0.0:8443 -tls-cert /etc/gfw/tls/server.crt -tls-key /etc/gfw/tls/server.key -acme-listen=${GFW_ACME_LISTEN}
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6
+ReadWritePaths=/var/lib/gfw
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+ARG GFW_WG_LAB_BASE=gfw-alt-p10-package-lab:local
+FROM ${GFW_WG_LAB_BASE}
+RUN apt-get update && apt-get install -y wireguard-tools && apt-get clean
+WORKDIR /work

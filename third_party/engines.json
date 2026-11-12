@@ -1,0 +1,467 @@
+[
+  {
+    "project": "gdns",
+    "revision": "b87f2d02e2536dba6a143800d94670945ba36f69",
+    "packages": [
+      "core",
+      "dnssec",
+      "transport"
+    ],
+    "files": [
+      {
+        "path": "internal/core/cache.go",
+        "sha256": "8cf75fa79976ac23745a988888752ad41def62da461a72716b9e0ae7ce42b784"
+      },
+      {
+        "path": "internal/core/cache_concurrency_test.go",
+        "sha256": "69badc9579b0a4be9151467b955a9d6fbcaa40268003aceeb2d9d189a63b1162"
+      },
+      {
+        "path": "internal/core/config.go",
+        "sha256": "0f7f675d543abea8d9733b72e533504942a4849398b6b07051a6395101f70843"
+      },
+      {
+        "path": "internal/core/core_test.go",
+        "sha256": "8321096a9824b27b5e7732a4c083b682e47f62de13432e254a028ed89e3db5b5"
+      },
+      {
+        "path": "internal/core/dnssec_live_test.go",
+        "sha256": "e9d73e465beda1b75e6a9bcf325a7827fb682e0561e49602d025fb58549117a0"
+      },
+      {
+        "path": "internal/core/dnssec_test.go",
+        "sha256": "ad58af240848eb52c1e97dc765e1dfc97f6c9038435a9c6e84a58197735287c4"
+      },
+      {
+        "path": "internal/core/feed_auth_test.go",
+        "sha256": "fb1e1e6931c3d0b872318972c23e0229dacc71a993875dbf34e4dddd8c589054"
+      },
+      {
+        "path": "internal/core/feeds.go",
+        "sha256": "29473bf27f0f3e46e732f58aea00e25e99222aef4a72b81bd1d0a44cbdecef0d"
+      },
+      {
+        "path": "internal/core/logs.go",
+        "sha256": "1bcb77281ea580c70622be77c2949567167082384faa14dc36a3413c66e556ca"
+      },
+      {
+        "path": "internal/core/managed_test.go",
+        "sha256": "3b5fef0bc6b7faf836f217b9d0942e8ae54a71475b2e1be0b200ef2afb4a9cd8"
+      },
+      {
+        "path": "internal/core/names.go",
+        "sha256": "0a54b8ef175e0052118a00c6f240844d39120fdc7bfb45d535f5cb2c66cec4a9"
+      },
+      {
+        "path": "internal/core/network_benchmark_test.go",
+        "sha256": "56c00a3f6c915f7a9099e82e85b55ce41b282cdc47b6b79330b061abcd641d10"
+      },
+      {
+        "path": "internal/core/packing_benchmark_test.go",
+        "sha256": "80ad314e5f373b6223fb6ad1ffbab6d9c0881dc7acc9581f575b74f51aa2e95f"
+      },
+      {
+        "path": "internal/core/peer.go",
+        "sha256": "e0971d9a6a29e2e92edf89db6bd4799716af01f69360a0d159613c22b5055b4c"
+      },
+      {
+        "path": "internal/core/performance_correctness_test.go",
+        "sha256": "ee1790ab0d12dda3df882b1b0b34b8e705639447e1750b0d7ec193e600e5384c"
+      },
+      {
+        "path": "internal/core/record_views.go",
+        "sha256": "3c24fbb2d5ef908ca5b02bf5869166847dee3c52d2b247d7edb70de4ca58ac0a"
+      },
+      {
+        "path": "internal/core/record_views_test.go",
+        "sha256": "5dd8e550cf26af4fb50367d355333f65fe7f260dcd6e0e33d971dfdfbbcf7ab2"
+      },
+      {
+        "path": "internal/core/resolver.go",
+        "sha256": "b7e545bd0f5fe02a98ce8d523b4267297049459f663fa7bc23210d14be387aec"
+      },
+      {
+        "path": "internal/core/transfer.go",
+        "sha256": "a9626e8e88a3c020f509f04b3ff51c06663a012a84ca5224267a18532750eeff"
+      },
+      {
+        "path": "internal/core/transfer_test.go",
+        "sha256": "aaee331dfc6b70ed0f9f1ffc5571fb4dd9199a58edd67665cb280adabe0f5ee9"
+      },
+      {
+        "path": "internal/dnssec/answer.go",
+        "sha256": "1ffcf7da96286cdaeee4f5805320e21e5606b0269a110af48f80d69b7e155757"
+      },
+      {
+        "path": "internal/dnssec/config.go",
+        "sha256": "d14624c163ef958ad0d41b0f5d813d70de06a991bde28d245d975bedae14a7f8"
+      },
+      {
+        "path": "internal/dnssec/config_test.go",
+        "sha256": "45f3c46c85676b99eaaac1509787b978442c9639da74015736c870631fc98bd4"
+      },
+      {
+        "path": "internal/dnssec/iana.go",
+        "sha256": "6d8e782a6c87a8b5e354109bf8a3b357d4ee43fafba4b8b3d168abf883d29b4d"
+      },
+      {
+        "path": "internal/dnssec/managed.go",
+        "sha256": "0fda3a7b03940ea403fcd931385042ff17bf89d3b549f0037fca7201cdfabfa9"
+      },
+      {
+        "path": "internal/dnssec/managed_test.go",
+        "sha256": "8a19fce1aaaedb75a36de971927c5183727b671ad651873c6fd79a59f4a27ad9"
+      },
+      {
+        "path": "internal/dnssec/validator.go",
+        "sha256": "86d437198f34e8b4ec463cd98df9d967dbb656d971536e65c72392d6c4effd2e"
+      },
+      {
+        "path": "internal/dnssec/validator_test.go",
+        "sha256": "b8edd806e2271f9167c698cbf280164d22088cd6a334214d7c917b9467317772"
+      },
+      {
+        "path": "internal/transport/doh.go",
+        "sha256": "ad49eec6d7507247a09d1666f8344a972d13a45ef7accc40bea7a99073409a86"
+      },
+      {
+        "path": "internal/transport/tls.go",
+        "sha256": "ec90b5e7d059a0af80cd0917e8a3be793272fbf04d003ad09871c4c80a9b382e"
+      },
+      {
+        "path": "internal/transport/udp.go",
+        "sha256": "4a537a4f81d398bb1874b64592f05a59781902a47af8a73015b0747458231168"
+      },
+      {
+        "path": "internal/transport/udp_linux.go",
+        "sha256": "a32f5b1c3fdb25327d1677265cc1e71061ecd6031042aff71acb5eedd1b4a408"
+      },
+      {
+        "path": "internal/transport/udp_other.go",
+        "sha256": "89059ae20fe7c7c084afc0f423ce9c2a0cfdeb2e832fb87d90567472c9177aff"
+      },
+      {
+        "path": "internal/transport/udp_test.go",
+        "sha256": "305ad6a0f94fd4974e7d42558e267a4bb67f4c530b457ad46dc92860c848af27"
+      }
+    ],
+    "changes": "Go internal import prefixes rewritten for GFW; standalone UI and accounts excluded. Snapshot includes working-tree source."
+  },
+  {
+    "project": "gdhcp",
+    "revision": "bbd523cf786eedc722af5aa663d85f825aa885ee",
+    "packages": [
+      "classify",
+      "config",
+      "core",
+      "ddns",
+      "dhcp",
+      "ha",
+      "metrics",
+      "model",
+      "pool",
+      "relay",
+      "server",
+      "storage",
+      "logbuf"
+    ],
+    "files": [
+      {
+        "path": "internal/classify/classify.go",
+        "sha256": "053c60f971fd302d4d796c16abeaa537875c8a71942e948f702878db7ba5cd3e"
+      },
+      {
+        "path": "internal/classify/classify_test.go",
+        "sha256": "c8076bc3772eac7ebbc74d93ba4198f10b91eef47a12f6036585afb5c4cf9b4b"
+      },
+      {
+        "path": "internal/config/access.go",
+        "sha256": "6a4971418e7367dd0cfc9a80b7960248a385569b6980dbe99290ef53da1a2cbb"
+      },
+      {
+        "path": "internal/config/config.go",
+        "sha256": "f67ad36afc41aee4d8f35e88dc58f5191d67e6413d90eabc5fc6b35588891e54"
+      },
+      {
+        "path": "internal/config/config_test.go",
+        "sha256": "a17af4cacf8dcfda15e7fa40a14fb95b72d36376cc813f3e9c9b2613e0164071"
+      },
+      {
+        "path": "internal/config/ddns.go",
+        "sha256": "82706947b2b859f90eb12f5ef4c3aaad3b7d78ca9ba922cabe9c545c53c65569"
+      },
+      {
+        "path": "internal/config/ddns_test.go",
+        "sha256": "80873a0b63412526308659b0c20ed78d90c51720372b05ed88dd7508d3ee8cbb"
+      },
+      {
+        "path": "internal/config/dhcpv6.go",
+        "sha256": "439608fa0274b05081a4b42b996f92b1858faeea16a8fa54053b81dc49dd62e4"
+      },
+      {
+        "path": "internal/config/dhcpv6_test.go",
+        "sha256": "a4594b14458b886bc38bcb9f7aa4049598a9d71c8a1d4b24ae1aa9ed03aaec58"
+      },
+      {
+        "path": "internal/config/validate.go",
+        "sha256": "6363c54688f0b43bc543f5377ff873058b8d609bca7e32844724ac62f51dc6cf"
+      },
+      {
+        "path": "internal/core/batch.go",
+        "sha256": "4b99b184eba2c9cabd1bc324d17ffe67361fd45f36f085efda4bb2fb4148bd5e"
+      },
+      {
+        "path": "internal/core/batch_test.go",
+        "sha256": "4a5eea1ced58895e596f8819fdc1f1b29cb9b1ba89bb54e06675c3f77925369b"
+      },
+      {
+        "path": "internal/core/ddns_test.go",
+        "sha256": "5d239547eb3e2a3059f0a1383a30034b55626a69ce324c79d4628aba8f2c274d"
+      },
+      {
+        "path": "internal/core/handle.go",
+        "sha256": "8d0c4326b739aec93b6eb04d1f8438131c77bb17c95b815fdde2c2dc1f6b71cb"
+      },
+      {
+        "path": "internal/core/lease_safety_test.go",
+        "sha256": "2908dd7b79f5ff68b2973aa542fad02572551876a36b56f9cd376cf3079edeae"
+      },
+      {
+        "path": "internal/core/service.go",
+        "sha256": "852a673ccd3ad3c9e4856a7bbaceedc23404d9ac9c9ee206f7cef98b3bc76904"
+      },
+      {
+        "path": "internal/core/snapshot.go",
+        "sha256": "0845f00b9099514b7cd3878eded41153beab3c68ca779b4df4f9cf3c9ff53c80"
+      },
+      {
+        "path": "internal/core/transport_test.go",
+        "sha256": "22bf902df31dabcdb87a3ca0237bc1e9e7feb981782c223f4829e6535531770d"
+      },
+      {
+        "path": "internal/ddns/nsupdate.go",
+        "sha256": "ba1d835328e3913b3cf448ce3a7be00fb16fc729bbaac056f6c341a0624fc84d"
+      },
+      {
+        "path": "internal/ddns/nsupdate_test.go",
+        "sha256": "7c65ec3702a3c93d9883013287f7885c4e8d48696fa4c83411af755d93c4879d"
+      },
+      {
+        "path": "internal/ddns/samba_integration_test.go",
+        "sha256": "e271e46fa0f6ab329b45c0150d8dc32bf4a96bef40edd823a29be369aa487725"
+      },
+      {
+        "path": "internal/ddns/worker.go",
+        "sha256": "9a44dddd67b6cdd340252bd71801a597516390a01ea7d9908baff298f3ceb28c"
+      },
+      {
+        "path": "internal/ddns/worker_test.go",
+        "sha256": "b16408918a6daba3c469c5b744d04ba1d538dcaccb7fd6de952bcf42a25f234b"
+      },
+      {
+        "path": "internal/dhcp/fqdn.go",
+        "sha256": "80cb2c9e5e5c531ed1e1ea4d2943d8c2f40a30de03fe4afe33bf4a5779948851"
+      },
+      {
+        "path": "internal/dhcp/fqdn_test.go",
+        "sha256": "ced937f773a554c1a5ce77a1c83af1c10c3dc7e7d8f624ef684482a2d292b961"
+      },
+      {
+        "path": "internal/dhcp/options.go",
+        "sha256": "32c5a51c08d25fb6dd126ec0ccc58c894cb599febf95a304cf5d65e3b7c7a43d"
+      },
+      {
+        "path": "internal/dhcp/packet.go",
+        "sha256": "f61ea884589a352594abf6201428c0ad667f4e0e11216f55e565d9e8bb97d2eb"
+      },
+      {
+        "path": "internal/dhcp/packet_test.go",
+        "sha256": "730d69376764e9d4bf9f19912a4f3735f70021e10160db72e76d65085e517817"
+      },
+      {
+        "path": "internal/ha/balance.go",
+        "sha256": "8c9ed9228b4e0abaa8d0a857c7c6a72e2e13a7fa2b6fc09f7f86971bd7b2aa0d"
+      },
+      {
+        "path": "internal/ha/balance_test.go",
+        "sha256": "d5be6d9062030c30b19c1db4b22ab7a1ad6021a7ad3ba01735bfdb0a6559618f"
+      },
+      {
+        "path": "internal/metrics/metrics.go",
+        "sha256": "1b58de07d1fffdf1156cd3f1813807bb9acacf8319736e3d5e49377f57d709a2"
+      },
+      {
+        "path": "internal/model/mac.go",
+        "sha256": "5a941e7243b5abd38fd718ce87253838322e6282c0163ff8e7ccb7cd2a03d19d"
+      },
+      {
+        "path": "internal/model/model.go",
+        "sha256": "79315d011a1de98e43f9877f16009cc991cf0824b66f6f08ee0958b5fcf7c6e2"
+      },
+      {
+        "path": "internal/pool/lifecycle_test.go",
+        "sha256": "76598163c5ff4b88144767f415b8430903248e4f434b9a651474f1b4d15d500e"
+      },
+      {
+        "path": "internal/pool/pool.go",
+        "sha256": "c2e30255df385e7c365259586a93cd02f88d546acca23e350314f78695277ce9"
+      },
+      {
+        "path": "internal/pool/pool_test.go",
+        "sha256": "663dfca85c51a476be812c70f1191467529947127254975d1d973b59a61dc81e"
+      },
+      {
+        "path": "internal/relay/option82.go",
+        "sha256": "4553affb419510d72001790c8eefa9c6f09dc57bd99119a0d96f2cb15b894327"
+      },
+      {
+        "path": "internal/relay/parsers.go",
+        "sha256": "e8b1110cd63da8fed1f34a13ae8e5b8570c5501c1f046cc453daf5bf801ea239"
+      },
+      {
+        "path": "internal/relay/profiles.go",
+        "sha256": "c5f42d91bca6437a9a4807ad6f079675849be2f6d4b8efa28a8ba783eb8837ed"
+      },
+      {
+        "path": "internal/relay/relay_test.go",
+        "sha256": "b3fea2c427fe7a23b349e735f8bcc673890bf5ab4bccf985ce7d5b59483cc6f9"
+      },
+      {
+        "path": "internal/relay/resolve.go",
+        "sha256": "33242d9a6145e91ea0f861a008b3153961583c9bba35ce380c9556926c3c4d38"
+      },
+      {
+        "path": "internal/server/interface_linux.go",
+        "sha256": "eeb25eed525edb284ee722a27bda1a78b633c6310c082d3ed6f2e58644f7d90e"
+      },
+      {
+        "path": "internal/server/interface_linux_test.go",
+        "sha256": "d5f4837b089bcb7c84032cea326daa8ddea7c47bb839601e688057146b66a5fa"
+      },
+      {
+        "path": "internal/server/interface_other.go",
+        "sha256": "42adeb298740f344853e9ed3037104faf5edec348d0f6eab882e6e11af5cd661"
+      },
+      {
+        "path": "internal/server/interface_test.go",
+        "sha256": "ed2fca7228fbf0e756a1eab24c1b2f93ec6fddc954defc3a9c08f5bcc5b81cb1"
+      },
+      {
+        "path": "internal/server/priority_linux.go",
+        "sha256": "720497e69e309494015b666ca33600aec99c784e14c5db696a33af28237f830c"
+      },
+      {
+        "path": "internal/server/priority_linux_test.go",
+        "sha256": "8a9d2cd3e0757adceb00fc84a2d9ff52a79847676a047247fa9736699cafe1e8"
+      },
+      {
+        "path": "internal/server/priority_other.go",
+        "sha256": "89ded676d4b0f51d62b2523defbe0372e722e741031892195ebb76f66ed2a5f6"
+      },
+      {
+        "path": "internal/server/udp.go",
+        "sha256": "a33093519154a8afdf1e20239f9e4d208afbe14725736a33270e9f2793eca9f8"
+      },
+      {
+        "path": "internal/server/udp_test.go",
+        "sha256": "3d1b6d0e90e2b642b9b05075ffd8ae4538144aad2db1df18a5c2b2f220cfe87f"
+      },
+      {
+        "path": "internal/storage/checkpoint.go",
+        "sha256": "c5890bc955ac2c8d0fa71059d72cda5f34a61e55be3d7b0aa407c27aee93eef7"
+      },
+      {
+        "path": "internal/storage/checkpoint_test.go",
+        "sha256": "b7fb96da576177af805234f2029cd8e18002370319e5ddc590e8024c4fbb1495"
+      },
+      {
+        "path": "internal/storage/commit.go",
+        "sha256": "3bf23cb25a30459846762c6a1e996debf1cf74ed1d1c0e5aa798cdd031fd0488"
+      },
+      {
+        "path": "internal/storage/commit_loadtest.go",
+        "sha256": "7c8e77757dc7c31f0100298bf1f346f001d2bfcaff39bc287be59c8907d8c511"
+      },
+      {
+        "path": "internal/storage/ddns.go",
+        "sha256": "2e3da02a267677752f6d3552005c60111d6202f432f2e8ac274eb5bb27cd5d78"
+      },
+      {
+        "path": "internal/storage/flight_loadtest.go",
+        "sha256": "af9c6e7c481ea9b8a5fddcd048dabb009ef455104ca29079b6e500f25a6a5119"
+      },
+      {
+        "path": "internal/storage/ipv6.go",
+        "sha256": "13a1c8af1b991bf3f515ddc0fa62d23ddf8c49db047476e79689570f98445fb1"
+      },
+      {
+        "path": "internal/storage/ipv6_test.go",
+        "sha256": "2112603a54a11f151954d48905e15108bd9ef684c4ba55669a0fb51884c48287"
+      },
+      {
+        "path": "internal/storage/store.go",
+        "sha256": "4e748a684c83c287714fc98d260f6506c1907fddc46dbec28a897043d819829a"
+      },
+      {
+        "path": "internal/storage/store_test.go",
+        "sha256": "0b6c23f2bf00676923e812751347d12069160e7babebd6df3a0326b9ea9a065a"
+      },
+      {
+        "path": "internal/logbuf/buffer.go",
+        "sha256": "5896fe28ed906f1e1944da719e9576cd4b6ed66c7624c99bf92c530e17412db2"
+      },
+      {
+        "path": "internal/core/service_test.go",
+        "sha256": "4b053859984300deec9f170531e0477ad228617209ef039e0dc5ba4a0688d6ac"
+      }
+    ],
+    "changes": "Go internal import prefixes rewritten; standalone UI and accounts excluded. GFW Linux socket adapter binds per-interface. config.Server.BoundInterface and core dispatch suppress trunk-name inference for an already terminated VLAN and enforce ingress interface. Snapshot includes working-tree source."
+  },
+  {
+    "project": "FESS",
+    "revision": "e86ef68ae518999f12b099c59bbaeed3d1e6602c",
+    "packages": [
+      "pkg/acmeissue",
+      "pkg/certs"
+    ],
+    "files": [
+      {
+        "path": "pkg/certs/material.go",
+        "sha256": "850e4ff22a217a872179a562194fe8e0d705a7948c11947eba0abdf6b6c783f6"
+      },
+      {
+        "path": "pkg/certs/material_test.go",
+        "sha256": "a4486db8e832cd3186f8861e6afe13a05410d33bb51269d3bd6b32168dd517aa"
+      },
+      {
+        "path": "pkg/acmeissue/issue.go",
+        "sha256": "ea456af407a7b43f909a138ac63d46f075c27b33098544daa83337e20361bdba"
+      }
+    ],
+    "changes": "Internal imports rewritten. HTTP-01 callback receives the authorized domain to bind challenge responses to Host. Snapshot includes working-tree source. Uses the ready order returned by WaitOrder when finalizing."
+  },
+  {
+    "project": "FESS",
+    "revision": "93878983cfb4a5019a4c066d9ac635eb3fbe1b31",
+    "packages": [
+      "pkg/engine",
+      "pkg/policy",
+      "pkg/routing"
+    ],
+    "files": [
+      {
+        "path": "pkg/engine/engine.go",
+        "sha256": "a3c735798191a84d9635a099ff3fda8fc3262be979d31f16f470e1d709f9270d"
+      },
+      {
+        "path": "pkg/policy/types.go",
+        "sha256": "1181329890a6eabcf01ab58b44d8684f202e5e706d66eb407427659b86415caf"
+      },
+      {
+        "path": "pkg/routing/path.go",
+        "sha256": "5218428cbe0fa45f73eb977e9c7ea0e23c52e30daea54f41eff5707809997876"
+      }
+    ],
+    "changes": "Imports adapted for the in-process GFW adapter."
+  }
+]

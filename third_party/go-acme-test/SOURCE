@@ -1,0 +1,3 @@
+Test-only fixture from golang.org/x/crypto v0.57.0/acme/autocert/internal/acmetest/ca.go. StartTLS and HTTPClient accessor added. Not linked into production binaries.
+Challenge tokens use base64url to match RFC 8555 character constraints.
+Authorization responses include the RFC 8555 identifier, required for Host-bound HTTP-01 validation.

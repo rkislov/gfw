@@ -1,0 +1,1017 @@
+{
+  "date": "2026-11-11",
+  "environment": {
+    "identity": {
+      "userspace": "Ubuntu 26.04 arm64",
+      "openldap": "2.6.10",
+      "freeradius": "3.2.8",
+      "openvpn": "2.7.0",
+      "strongswan": "6.0.4"
+    },
+    "load": {
+      "userspace": "ALT Linux p10 arm64",
+      "cpu": "4 virtual CPUs",
+      "links": "isolated veth namespaces",
+      "transport": "IPv4 UDP"
+    }
+  },
+  "runs": [
+    {
+      "name": "identity",
+      "version": "0.22.0",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "auth",
+          "check": "ldap-panel",
+          "positive": true,
+          "bad_password_denied": true,
+          "admin_access_denied": true
+        },
+        {
+          "category": "auth",
+          "check": "radius-panel",
+          "positive": true,
+          "bad_password_denied": true,
+          "admin_access_denied": true
+        },
+        {
+          "category": "auth",
+          "check": "ldap-negative",
+          "unknown_ca_denied": true,
+          "wrong_hostname_denied": true,
+          "unassigned_denied": true
+        },
+        {
+          "category": "auth",
+          "check": "radius-negative",
+          "wrong_secret_denied": true
+        },
+        {
+          "category": "auth",
+          "check": "ldap-openvpn",
+          "handshake": true,
+          "portal_export": true
+        },
+        {
+          "category": "auth",
+          "check": "radius-openvpn",
+          "handshake": true,
+          "portal_export": true
+        },
+        {
+          "category": "auth",
+          "check": "ldap-ikev2",
+          "handshake": true,
+          "portal_export": true
+        },
+        {
+          "category": "auth",
+          "check": "radius-ikev2",
+          "handshake": true,
+          "portal_export": true
+        },
+        {
+          "category": "auth",
+          "check": "radius-totp",
+          "missing_denied": true,
+          "valid_accepted": true,
+          "replay_denied": true
+        }
+      ]
+    },
+    {
+      "name": "standard",
+      "version": "0.22.0",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "stand",
+          "kernel": "5.10.274-std-def-alt1",
+          "suricata": "This is Suricata version 8.0.4 RELEASE",
+          "clickhouse": "25.8.12.129",
+          "cpus": 4,
+          "memory_kib": 4017228,
+          "payload_bytes": 512
+        },
+        {
+          "category": "logging",
+          "sent": 1000,
+          "bad": 0,
+          "elapsed": 0.9922943759999994,
+          "target_pps": 1000,
+          "offline": false,
+          "queued_before_reconnect": 7,
+          "drain_seconds": 1.904977000999999,
+          "new_rows": 1000,
+          "rule_rows": 74,
+          "nflog_limited": 926,
+          "lost": 0,
+          "evicted": 0,
+          "firewall_seen": 1000
+        },
+        {
+          "category": "logging",
+          "sent": 4000,
+          "bad": 0,
+          "elapsed": 0.3986631669999987,
+          "target_pps": 10000,
+          "offline": false,
+          "queued_before_reconnect": 4110,
+          "drain_seconds": 0.6317414170000006,
+          "new_rows": 4000,
+          "rule_rows": 59,
+          "nflog_limited": 3941,
+          "lost": 0,
+          "evicted": 0,
+          "firewall_seen": 4000
+        },
+        {
+          "category": "logging",
+          "sent": 12000,
+          "bad": 0,
+          "elapsed": 0.29979054100000013,
+          "target_pps": 40000,
+          "offline": true,
+          "queued_before_reconnect": 12185,
+          "drain_seconds": 2.724384501000001,
+          "new_rows": 12000,
+          "rule_rows": 57,
+          "nflog_limited": 11943,
+          "lost": 0,
+          "evicted": 0,
+          "firewall_seen": 12000
+        },
+        {
+          "category": "capture",
+          "backend": "packet",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 0,
+          "elapsed": 1.984603834999998,
+          "good_received": 2000,
+          "bad_received": 0,
+          "captured": 2000,
+          "dropped": 0,
+          "pcap_bytes": 1140024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "packet",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 0,
+          "elapsed": 1.9988228349999986,
+          "good_received": 20000,
+          "bad_received": 0,
+          "captured": 20000,
+          "dropped": 0,
+          "pcap_bytes": 11400024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9999018349999993,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 79755,
+          "dropped": 0,
+          "pcap_bytes": 45460374,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp-generic",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 0,
+          "elapsed": 1.9843675430000012,
+          "good_received": 2000,
+          "bad_received": 0,
+          "captured": 2000,
+          "dropped": 0,
+          "pcap_bytes": 1140024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp-generic",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 0,
+          "elapsed": 1.998911708999998,
+          "good_received": 20000,
+          "bad_received": 0,
+          "captured": 20000,
+          "dropped": 0,
+          "pcap_bytes": 11400024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp-generic",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9997952509999948,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 0,
+          "elapsed": 1.9849085009999996,
+          "good_received": 2000,
+          "bad_received": 0,
+          "captured": 2000,
+          "dropped": 0,
+          "pcap_bytes": 1140024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 0,
+          "elapsed": 1.9987616680000002,
+          "good_received": 20000,
+          "bad_received": 0,
+          "captured": 20000,
+          "dropped": 0,
+          "pcap_bytes": 11400024,
+          "truncated": 0
+        },
+        {
+          "category": "capture",
+          "backend": "xdp",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998091670000022,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "truncated": 0
+        },
+        {
+          "category": "ips",
+          "mode": "baseline",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 100,
+          "elapsed": 1.9850116680000056,
+          "good_received": 1900,
+          "bad_received": 100,
+          "queue_before": {},
+          "queue_after": {}
+        },
+        {
+          "category": "ips",
+          "mode": "baseline",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 1000,
+          "elapsed": 1.9986797100000047,
+          "good_received": 19000,
+          "bad_received": 1000,
+          "queue_before": {},
+          "queue_after": {}
+        },
+        {
+          "category": "ips",
+          "mode": "baseline",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 4000,
+          "elapsed": 1.9997588760000014,
+          "good_received": 76000,
+          "bad_received": 4000,
+          "queue_before": {},
+          "queue_after": {}
+        },
+        {
+          "category": "ips",
+          "mode": "closed",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 100,
+          "elapsed": 1.986848793,
+          "good_received": 1900,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips",
+          "mode": "closed",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 1000,
+          "elapsed": 1.9988075010000017,
+          "good_received": 19000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips",
+          "mode": "closed",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 4000,
+          "elapsed": 1.9997768340000022,
+          "good_received": 76000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips",
+          "mode": "open",
+          "target_pps": 1000,
+          "sent": 2000,
+          "bad": 100,
+          "elapsed": 1.984952542000002,
+          "good_received": 1900,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips",
+          "mode": "open",
+          "target_pps": 10000,
+          "sent": 20000,
+          "bad": 1000,
+          "elapsed": 1.9986722089999915,
+          "good_received": 19000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips",
+          "mode": "open",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 4000,
+          "elapsed": 1.9997850010000064,
+          "good_received": 76000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "extended",
+      "version": "0.22.0",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "stand",
+          "kernel": "5.10.274-std-def-alt1",
+          "suricata": "This is Suricata version 8.0.4 RELEASE",
+          "clickhouse": "25.8.12.129",
+          "cpus": 4,
+          "memory_kib": 4017228,
+          "payload_bytes": 512
+        },
+        {
+          "category": "capture_repeat",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9997781680000006,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_repeat",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9997637509999997,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 79755,
+          "dropped": 0,
+          "pcap_bytes": 45460374,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 245
+        },
+        {
+          "category": "capture_repeat",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998149599999984,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 79755,
+          "dropped": 0,
+          "pcap_bytes": 45460374,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 245
+        },
+        {
+          "category": "capture_peak",
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999270839999994,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 199592,
+          "dropped": 0,
+          "pcap_bytes": 113767464,
+          "state": "complete"
+        },
+        {
+          "category": "capture_peak",
+          "backend": "xdp-generic",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 2.0000045840000027,
+          "good_received": 199789,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete"
+        },
+        {
+          "category": "capture_peak",
+          "backend": "xdp",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.999940918,
+          "good_received": 199496,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete"
+        },
+        {
+          "category": "ips_peak",
+          "mode": "baseline",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 10000,
+          "elapsed": 1.999913835000001,
+          "good_received": 190000,
+          "bad_received": 10000
+        },
+        {
+          "category": "combined",
+          "mode": "closed",
+          "backend": "xdp",
+          "target_pps": 40000,
+          "sent": 400000,
+          "bad": 20000,
+          "elapsed": 9.999776672,
+          "good_received": 379748,
+          "bad_received": 0,
+          "captured": 400000,
+          "dropped": 0,
+          "pcap_bytes": 228000024,
+          "state": "complete",
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips_peak",
+          "mode": "closed",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 10000,
+          "elapsed": 1.999933876,
+          "good_received": 190000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips_stopped",
+          "mode": "closed",
+          "sent": 16000,
+          "bad": 800,
+          "elapsed": 0.3997599590000007,
+          "good_received": 0,
+          "bad_received": 0,
+          "queue_after": {
+            "waiting": 4096,
+            "kernel_dropped": 11904,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips_peak",
+          "mode": "open",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 10000,
+          "elapsed": 1.9999490430000009,
+          "good_received": 190000,
+          "bad_received": 0,
+          "queue_before": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          },
+          "queue_after": {
+            "waiting": 0,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        },
+        {
+          "category": "ips_stopped",
+          "mode": "open",
+          "sent": 16000,
+          "bad": 800,
+          "elapsed": 0.399878833999999,
+          "good_received": 11309,
+          "bad_received": 595,
+          "queue_after": {
+            "waiting": 4096,
+            "kernel_dropped": 0,
+            "user_dropped": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "immediate_wrapper_4_mib",
+      "version": "0.22.0",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "stand",
+          "kernel": "5.10.274-std-def-alt1",
+          "suricata": "This is Suricata version 8.0.4 RELEASE",
+          "clickhouse": "25.8.12.129",
+          "cpus": 4,
+          "memory_kib": 4017228,
+          "payload_bytes": 512
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.999797043,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998131260000012,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9997493339999988,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999734589999996,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999637509999992,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_immediate",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999673759999972,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        }
+      ]
+    },
+    {
+      "name": "immediate_package_candidate_4_mib",
+      "version": "0.22.1-candidate",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "stand",
+          "kernel": "5.10.274-std-def-alt1",
+          "suricata": "This is Suricata version 8.0.4 RELEASE",
+          "clickhouse": "25.8.12.129",
+          "cpus": 4,
+          "memory_kib": 4017228,
+          "payload_bytes": 512
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9997360430000004,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.999798418000001,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 79693,
+          "dropped": 307,
+          "pcap_bytes": 45425034,
+          "state": "incomplete",
+          "missing_head": 0,
+          "missing_middle": 307,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998181679999991,
+          "good_received": 79999,
+          "bad_received": 0,
+          "captured": 79295,
+          "dropped": 705,
+          "pcap_bytes": 45198174,
+          "state": "incomplete",
+          "missing_head": 0,
+          "missing_middle": 705,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.999982083999999,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 199917,
+          "dropped": 83,
+          "pcap_bytes": 113952714,
+          "state": "incomplete",
+          "missing_head": 0,
+          "missing_middle": 83,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999804169999997,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999716260000007,
+          "good_received": 199783,
+          "bad_received": 0,
+          "captured": 198415,
+          "dropped": 1585,
+          "pcap_bytes": 113096574,
+          "state": "incomplete",
+          "missing_head": 0,
+          "missing_middle": 1585,
+          "missing_tail": 0
+        }
+      ]
+    },
+    {
+      "name": "immediate_package_16_mib",
+      "version": "0.22.1",
+      "exit_status": 0,
+      "measurements": [
+        {
+          "category": "stand",
+          "kernel": "5.10.274-std-def-alt1",
+          "suricata": "This is Suricata version 8.0.4 RELEASE",
+          "clickhouse": "25.8.12.129",
+          "cpus": 4,
+          "memory_kib": 4017228,
+          "payload_bytes": 512
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998325430000001,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998481259999998,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 40000,
+          "sent": 80000,
+          "bad": 0,
+          "elapsed": 1.9998145839999992,
+          "good_received": 80000,
+          "bad_received": 0,
+          "captured": 80000,
+          "dropped": 0,
+          "pcap_bytes": 45600024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 1,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999796259999982,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 2,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999719589999998,
+          "good_received": 200000,
+          "bad_received": 0,
+          "captured": 200000,
+          "dropped": 0,
+          "pcap_bytes": 114000024,
+          "state": "complete",
+          "missing_head": 0,
+          "missing_middle": 0,
+          "missing_tail": 0
+        },
+        {
+          "category": "capture_patched",
+          "repeat": 3,
+          "backend": "packet",
+          "target_pps": 100000,
+          "sent": 200000,
+          "bad": 0,
+          "elapsed": 1.9999605430000003,
+          "good_received": 199949,
+          "bad_received": 0,
+          "captured": 195540,
+          "dropped": 4460,
+          "pcap_bytes": 111457824,
+          "state": "incomplete",
+          "missing_head": 0,
+          "missing_middle": 4460,
+          "missing_tail": 0
+        }
+      ]
+    }
+  ]
+}

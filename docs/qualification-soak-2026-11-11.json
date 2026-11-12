@@ -1,0 +1,701 @@
+{
+  "date": "2026-11-11",
+  "gfw_version": "0.22.1",
+  "stand": {
+    "category": "stand",
+    "kernel": "5.10.274-std-def-alt1",
+    "suricata": "This is Suricata version 8.0.4 RELEASE",
+    "clickhouse": "25.8.12.129",
+    "cpus": 4,
+    "memory_kib": 4017228,
+    "payload_bytes": 512,
+    "os": "ALT Linux p10",
+    "architecture": "aarch64",
+    "hypervisor": "QEMU/HVF",
+    "topology": "veth + network namespaces",
+    "physical_nic_tested": false,
+    "pcap_storage": "guest initramfs"
+  },
+  "tcpdump": {
+    "buffer_kib": 16384,
+    "immediate_mode": true
+  },
+  "full_pcap_ab": [
+    {
+      "category": "compare",
+      "repeat": 1,
+      "buffered": false,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 3.999973252,
+      "good_received": 400000,
+      "bad_received": 0,
+      "captured": 400000,
+      "dropped": 0,
+      "pcap_bytes": 228000024,
+      "state": "complete",
+      "missing_head": 0,
+      "missing_middle": 0,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 400006,
+      "tcpdump_write_bytes_at_sample": 228000139
+    },
+    {
+      "category": "compare",
+      "repeat": 1,
+      "buffered": true,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 4.000014168,
+      "good_received": 395231,
+      "bad_received": 0,
+      "captured": 393860,
+      "dropped": 6140,
+      "pcap_bytes": 224500224,
+      "state": "incomplete",
+      "missing_head": 0,
+      "missing_middle": 6140,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 54814,
+      "tcpdump_write_bytes_at_sample": 224497779
+    },
+    {
+      "category": "compare",
+      "repeat": 2,
+      "buffered": false,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 3.999976584999999,
+      "good_received": 400000,
+      "bad_received": 0,
+      "captured": 400000,
+      "dropped": 0,
+      "pcap_bytes": 228000024,
+      "state": "complete",
+      "missing_head": 0,
+      "missing_middle": 0,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 400006,
+      "tcpdump_write_bytes_at_sample": 228000139
+    },
+    {
+      "category": "compare",
+      "repeat": 2,
+      "buffered": true,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 3.999996461000002,
+      "good_received": 400000,
+      "bad_received": 0,
+      "captured": 400000,
+      "dropped": 0,
+      "pcap_bytes": 228000024,
+      "state": "complete",
+      "missing_head": 0,
+      "missing_middle": 0,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 55669,
+      "tcpdump_write_bytes_at_sample": 227999859
+    },
+    {
+      "category": "compare",
+      "repeat": 3,
+      "buffered": false,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 3.999979209999996,
+      "good_received": 397553,
+      "bad_received": 0,
+      "captured": 394137,
+      "dropped": 5863,
+      "pcap_bytes": 224658114,
+      "state": "incomplete",
+      "missing_head": 0,
+      "missing_middle": 5863,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 394143,
+      "tcpdump_write_bytes_at_sample": 224658229
+    },
+    {
+      "category": "compare",
+      "repeat": 3,
+      "buffered": true,
+      "backend": "packet",
+      "target_pps": 100000,
+      "sent": 400000,
+      "bad": 0,
+      "elapsed": 4.000025876999999,
+      "good_received": 399648,
+      "bad_received": 0,
+      "captured": 399779,
+      "dropped": 221,
+      "pcap_bytes": 227874054,
+      "state": "incomplete",
+      "missing_head": 0,
+      "missing_middle": 221,
+      "missing_tail": 0,
+      "tcpdump_write_syscalls": 55638,
+      "tcpdump_write_bytes_at_sample": 227872883
+    }
+  ],
+  "combined_90s": {
+    "tcpdump_mode": "buffered_output_without_-U",
+    "nfqueue_mode": "fail-closed",
+    "target_pps": 100000,
+    "pcap_snaplen_bytes": 64,
+    "pcap_window_seconds": 25,
+    "pcap_max_mib_per_window": 256,
+    "capture_windows": [
+      {
+        "category": "soak_capture",
+        "window": 1,
+        "packets": 2498988,
+        "dropped": 0,
+        "pcap_bytes": 199919064,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 75,
+          "oldest_ms": 1794410008975,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 4919021,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 2,
+        "packets": 2498671,
+        "dropped": 0,
+        "pcap_bytes": 199893704,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 16,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 352,
+          "oldest_ms": 1794410032970,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 7443479,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 3,
+        "packets": 2410357,
+        "dropped": 0,
+        "pcap_bytes": 192828584,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 4095,
+          "kernel_dropped": 31600,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 225,
+          "oldest_ms": 1794410058971,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 9925252,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      }
+    ],
+    "totals": {
+      "category": "soak",
+      "sent": 9000000,
+      "bad": 450000,
+      "elapsed": 90.00001470999999,
+      "good_received": 8461203,
+      "bad_received": 0,
+      "firewall_seen": 9000000,
+      "traffic_before": {
+        "queued": 27,
+        "oldest_ms": 1794409983340,
+        "evicted": 0,
+        "lost": 0,
+        "incomplete_snapshots": 0,
+        "rate_limited": 2399106,
+        "conntrack": true,
+        "nflog": true,
+        "nflog_conntrack": false,
+        "accounting": true
+      },
+      "traffic_after": {
+        "queued": 0,
+        "oldest_ms": 0,
+        "evicted": 0,
+        "lost": 1,
+        "incomplete_snapshots": 1,
+        "rate_limited": 11396810,
+        "conntrack": true,
+        "nflog": true,
+        "nflog_conntrack": false,
+        "accounting": true
+      },
+      "queue": {
+        "waiting": 0,
+        "kernel_dropped": 79370,
+        "user_dropped": 0
+      },
+      "clickhouse_counts": {
+        "destroy": 2985,
+        "new": 8999,
+        "rule": 3190,
+        "snapshot": 887
+      }
+    }
+  },
+  "combined_320s": {
+    "tcpdump_mode": "stock_-U",
+    "nfqueue_mode": "fail-closed",
+    "target_pps": 100000,
+    "pcap_snaplen_bytes": 64,
+    "pcap_window_seconds": 25,
+    "pcap_max_mib_per_window": 256,
+    "capture_windows": [
+      {
+        "category": "soak_capture",
+        "window": 1,
+        "packets": 2498574,
+        "dropped": 0,
+        "pcap_bytes": 199885944,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 28,
+          "kernel_dropped": 23462,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 231,
+          "oldest_ms": 1794410125116,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 2537556,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 2,
+        "packets": 2480824,
+        "dropped": 0,
+        "pcap_bytes": 198465944,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 4086,
+          "kernel_dropped": 44061,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 195,
+          "oldest_ms": 1794410151117,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 5065396,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 3,
+        "packets": 2548524,
+        "dropped": 0,
+        "pcap_bytes": 203881944,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 23,
+          "kernel_dropped": 292917,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 159,
+          "oldest_ms": 1794410177116,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 7656868,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 4,
+        "packets": 2497632,
+        "dropped": 0,
+        "pcap_bytes": 199810584,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 305491,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 10179695,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 5,
+        "packets": 2499024,
+        "dropped": 0,
+        "pcap_bytes": 199921944,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 898,
+          "kernel_dropped": 309268,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 203,
+          "oldest_ms": 1794410227116,
+          "evicted": 0,
+          "lost": 1,
+          "incomplete_snapshots": 1,
+          "rate_limited": 12712969,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 6,
+        "packets": 2497679,
+        "dropped": 0,
+        "pcap_bytes": 199814344,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 304,
+          "kernel_dropped": 324971,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 159,
+          "oldest_ms": 1794410253109,
+          "evicted": 0,
+          "lost": 1,
+          "incomplete_snapshots": 1,
+          "rate_limited": 15255661,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 7,
+        "packets": 2498381,
+        "dropped": 0,
+        "pcap_bytes": 199870504,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 470054,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 1,
+          "incomplete_snapshots": 1,
+          "rate_limited": 17782737,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 8,
+        "packets": 2498151,
+        "dropped": 0,
+        "pcap_bytes": 199852104,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 4,
+          "kernel_dropped": 504647,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 360,
+          "oldest_ms": 1794410303116,
+          "evicted": 0,
+          "lost": 1,
+          "incomplete_snapshots": 1,
+          "rate_limited": 20317654,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 9,
+        "packets": 2498624,
+        "dropped": 0,
+        "pcap_bytes": 199889944,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 261,
+          "kernel_dropped": 508106,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 196,
+          "oldest_ms": 1794410329117,
+          "evicted": 0,
+          "lost": 1,
+          "incomplete_snapshots": 1,
+          "rate_limited": 22847152,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 10,
+        "packets": 2498147,
+        "dropped": 0,
+        "pcap_bytes": 199851784,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 560,
+          "kernel_dropped": 548722,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 25383159,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 11,
+        "packets": 2498347,
+        "dropped": 0,
+        "pcap_bytes": 199867784,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 595548,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 336,
+          "oldest_ms": 1794410379109,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 27923801,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      },
+      {
+        "category": "soak_capture",
+        "window": 12,
+        "packets": 2498606,
+        "dropped": 0,
+        "pcap_bytes": 199888504,
+        "reason": "duration",
+        "state": "complete",
+        "queue": {
+          "waiting": 30,
+          "kernel_dropped": 613854,
+          "user_dropped": 0
+        },
+        "traffic": {
+          "queued": 191,
+          "oldest_ms": 1794410405116,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 30451456,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        }
+      }
+    ],
+    "totals": {
+      "category": "soak",
+      "sent": 32000000,
+      "bad": 1600000,
+      "elapsed": 319.999938444,
+      "good_received": 29640823,
+      "bad_received": 0,
+      "firewall_seen": 32000000,
+      "traffic_before": {
+        "queued": 32,
+        "oldest_ms": 1794410101297,
+        "evicted": 0,
+        "lost": 0,
+        "incomplete_snapshots": 0,
+        "rate_limited": 0,
+        "conntrack": true,
+        "nflog": true,
+        "nflog_conntrack": false,
+        "accounting": true
+      },
+      "traffic_after": {
+        "queued": 0,
+        "oldest_ms": 0,
+        "evicted": 0,
+        "lost": 2,
+        "incomplete_snapshots": 2,
+        "rate_limited": 31991951,
+        "conntrack": true,
+        "nflog": true,
+        "nflog_conntrack": false,
+        "accounting": true
+      },
+      "queue": {
+        "waiting": 0,
+        "kernel_dropped": 635215,
+        "user_dropped": 0
+      },
+      "clickhouse_counts": {
+        "destroy": 19108,
+        "new": 31998,
+        "rule": 8049,
+        "snapshot": 1704
+      },
+      "udp_before": {
+        "InDatagrams": 0,
+        "NoPorts": 0,
+        "InErrors": 0,
+        "OutDatagrams": 0,
+        "RcvbufErrors": 0,
+        "SndbufErrors": 0,
+        "InCsumErrors": 0,
+        "IgnoredMulti": 0
+      },
+      "udp_after": {
+        "InDatagrams": 29640823,
+        "NoPorts": 0,
+        "InErrors": 154261,
+        "OutDatagrams": 0,
+        "RcvbufErrors": 154261,
+        "SndbufErrors": 0,
+        "InCsumErrors": 0,
+        "IgnoredMulti": 0
+      },
+      "links_before": {
+        "lan0": {
+          "rx_packets": 3,
+          "rx_dropped": 0,
+          "rx_missed_errors": 0,
+          "tx_packets": 6,
+          "tx_dropped": 0
+        },
+        "wan0": {
+          "rx_packets": 6,
+          "rx_dropped": 0,
+          "rx_missed_errors": 0,
+          "tx_packets": 6,
+          "tx_dropped": 0
+        }
+      },
+      "links_after": {
+        "lan0": {
+          "rx_packets": 32000020,
+          "rx_dropped": 0,
+          "rx_missed_errors": 0,
+          "tx_packets": 20,
+          "tx_dropped": 0
+        },
+        "wan0": {
+          "rx_packets": 28,
+          "rx_dropped": 0,
+          "rx_missed_errors": 0,
+          "tx_packets": 29795112,
+          "tx_dropped": 70
+        }
+      }
+    }
+  }
+}

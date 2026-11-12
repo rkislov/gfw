@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GFW · Управление шлюзом</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/app.js" defer></script>
+  <script src="/assets/network.js" defer></script>
+  <script src="/assets/policy.js" defer></script>
+  <script src="/assets/services.js" defer></script>
+ <script src="/assets/pki.js" defer></script>
+ <script src="/assets/wireguard.js" defer></script>
+ <script src="/assets/openvpn.js" defer></script>
+ <script src="/assets/openvpn-runtime.js" defer></script>
+ <script src="/assets/ipsec.js" defer></script>
+ <script src="/assets/feed.js" defer></script>
+ <script src="/assets/ids.js" defer></script>
+ <script src="/assets/traffic.js" defer></script>
+ <script src="/assets/capture.js" defer></script>
+ <script src="/assets/overview.js" defer></script>
+ <script src="/assets/xdp.js" defer></script>
+ <script src="/assets/flow.js" defer></script>
+ <script src="/assets/fess.js" defer></script>
+  <script src="/assets/identity.js" defer></script>
+  <script src="/assets/sysctl.js" defer></script>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+  <section id="login" class="min-h-screen grid place-items-center p-6">
+    <div class="w-full max-w-md">
+      <div class="mb-10 flex items-center gap-3"><span class="grid size-11 place-items-center rounded-xl bg-teal-700 text-white text-lg font-bold">G</span><span class="text-xl font-semibold tracking-tight">GFW <span class="text-slate-400 font-normal">/ gateway</span></span></div>
+      <p class="text-xs font-semibold tracking-widest text-teal-700">ПАНЕЛЬ УПРАВЛЕНИЯ</p>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight">Вход в GFW</h1>
+      <form id="personal-login" class="mt-7 space-y-4">
+        <label>Имя пользователя<input name="username" autocomplete="username" required maxlength="63"></label>
+        <label>Пароль<input name="password" type="password" autocomplete="current-password" required maxlength="1024"></label>
+        <label>Одноразовый код, если настроен<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
+        <button class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Войти</button>
+      </form>
+      <details id="emergency-login" class="mt-6">
+        <summary class="cursor-pointer text-sm text-teal-800">Вход с ключом администратора</summary>
+        <form id="login-form" class="mt-3 space-y-3">
+          <label>Ключ из файла <code>admin.token</code><input id="token" type="password" autocomplete="current-password" required maxlength="128" spellcheck="false"></label>
+          <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Войти с ключом</button>
+        </form>
+      </details>
+      <p id="login-error" role="alert" class="mt-4 text-sm text-red-700"></p>
+    </div>
+  </section>
+  <div id="app" hidden class="min-h-screen lg:flex">
+    <aside class="bg-slate-950 text-slate-300 lg:fixed lg:inset-y-0 lg:w-64 lg:overflow-y-auto flex flex-col">
+      <div class="px-6 py-7 flex items-center gap-3"><span class="grid size-10 place-items-center rounded-lg bg-teal-600 text-white text-lg font-bold">G</span><div><div class="font-semibold tracking-tight text-white text-xl">GFW</div><div class="text-[11px] tracking-widest text-slate-500">NETWORK SECURITY</div></div></div>
+      <p class="px-6 pt-3 pb-3 text-[10px] font-semibold tracking-widest text-slate-500">УПРАВЛЕНИЕ</p>
+      <nav class="px-3 flex flex-wrap gap-1 lg:flex-col" aria-label="Основная навигация">
+        <button data-page="overview" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Обзор системы</button>
+        <button data-page="network" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Сетевые интерфейсы</button>
+        <button data-page="firewall" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Межсетевой экран</button>
+        <button data-page="services" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">DNS и DHCP</button>
+        <details id="vpn-menu">
+          <summary class="cursor-pointer rounded-lg px-3 py-3 text-sm hover:bg-slate-800">VPN</summary>
+          <div class="ml-3 grid gap-1 border-l border-slate-700 pl-2">
+            <button data-page="wireguard" class="nav text-left rounded-lg px-3 py-2 text-sm hover:bg-slate-800">WireGuard</button>
+            <button data-page="openvpn" class="nav text-left rounded-lg px-3 py-2 text-sm hover:bg-slate-800">OpenVPN</button>
+            <button data-page="ipsec" class="nav text-left rounded-lg px-3 py-2 text-sm hover:bg-slate-800">IPsec / IKEv2</button>
+          </div>
+        </details>
+ <button data-page="pki" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Сертификаты и ACME</button>
+ <button data-page="fess" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Сайты и WAF</button>
+ <button data-page="ids" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Обнаружение угроз</button>
+ <button data-page="feed" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Подписка Security Feed</button>
+ <button data-page="traffic" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Журнал трафика</button>
+ <button data-page="xdp" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Ранняя фильтрация XDP</button>
+ <button data-page="capture" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Захват пакетов</button>
+ <button data-page="audit" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Аудит изменений</button>
+        <button data-page="users" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Пользователи и вход</button>
+        <button data-page="sysctl" class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Производительность (sysctl)</button>
+        <button data-page="portal" hidden class="nav text-left rounded-lg px-3 py-3 text-sm hover:bg-slate-800">Личный кабинет</button>
+      </nav>
+      <div class="mt-auto px-6 py-6 text-xs border-t border-slate-800"><button id="logout" class="text-slate-300 hover:text-white">Выйти из системы →</button></div>
+    </aside>
+    <main class="min-w-0 flex-1 lg:ml-64">
+      <header class="bg-white border-b border-slate-200 px-6 py-4 lg:px-10 flex items-center justify-between gap-4"><p class="text-sm text-slate-500">Узел / <span id="platform" class="text-slate-800">Загрузка…</span></p><span id="current-account" class="text-xs rounded-md bg-slate-100 px-3 py-1.5 text-slate-500"></span></header>
+      <div class="p-6 lg:p-10 max-w-7xl mx-auto">
+        <div class="mb-8 flex flex-wrap gap-4 items-start justify-between"><div><p class="text-xs font-medium text-teal-700 tracking-widest">GATEWAY CONTROL</p><h1 id="page-title" class="mt-2 text-3xl font-semibold tracking-tight">Обзор системы</h1><p id="page-description" class="mt-2 text-sm text-slate-500">Конфигурация, интерфейсы и состояние разработки.</p></div><button id="refresh" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-100">Обновить данные</button></div>
+        <div id="message" hidden role="status" class="mb-6 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900"></div>
+        <section id="page-portal" class="page" hidden>
+          <div class="rounded-xl border bg-white p-5">
+            <h2 class="font-semibold">Учётная запись</h2>
+            <p id="portal-account" class="mt-2 text-sm"></p>
+            <form id="portal-totp-start" class="mt-4 flex flex-wrap items-end gap-3">
+              <label>Текущий пароль<input name="password" type="password" autocomplete="current-password" required></label>
+              <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Создать ключ 2FA</button>
+            </form>
+            <form id="portal-totp-confirm" hidden class="mt-4 space-y-3">
+              <p class="text-sm">Добавьте ключ в приложение аутентификации как TOTP (6 цифр, 30 секунд).</p>
+              <code id="portal-totp-secret" class="block break-all"></code>
+              <label>Код приложения<input name="code" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" maxlength="6" required></label>
+              <button class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Подтвердить 2FA</button>
+            </form>
+          </div>
+          <div class="mt-5 rounded-xl border bg-white p-5">
+            <h2 class="font-semibold">Мои подключения VPN</h2>
+            <div id="portal-profiles" class="mt-3 divide-y"></div>
+          </div>
+        </section>
+        <section id="page-users" class="page" hidden>
+          <div class="grid gap-5 xl:grid-cols-2">
+            <div class="rounded-xl border bg-white p-5">
+              <h2 class="font-semibold">Учётные записи</h2>
+              <div id="identity-users" class="mt-3 divide-y"></div>
+              <form id="identity-user" class="mt-4 space-y-3">
+                <input name="revision" type="hidden" value="0">
+                <label>Логин<input name="name" required pattern="[a-z][a-z0-9._\-]{0,62}" maxlength="63"></label>
+                <label>Источник пароля<select name="source"><option value="local">Локальная база</option><option value="ldap">LDAP</option><option value="radius">RADIUS</option></select></label>
+                <label>Роль<select name="role"><option value="user">Пользователь VPN</option><option value="admin">Администратор</option></select></label>
+                <label>Новый пароль локальной учётной записи<input name="password" type="password" autocomplete="new-password"></label>
+                <label>Профили VPN<textarea name="grants" rows="4" placeholder="openvpn:ID"></textarea></label>
+                <label>Добавить подтверждённый профиль<select id="identity-grant"><option value="">Выберите профиль</option></select></label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="disabled">Заблокировать вход</label>
+                <label class="flex items-center gap-2"><input type="checkbox" name="reset_totp">Сбросить 2FA</label>
+                <div class="flex gap-2"><button class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Сохранить</button><button type="reset" class="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Новая запись</button></div>
+              </form>
+            </div>
+            <div class="space-y-5">
+              <form id="identity-ldap" class="space-y-3 rounded-xl border bg-white p-5">
+                <h2 class="font-semibold">LDAP</h2>
+                <label>Адрес LDAPS<input name="url" placeholder="ldaps://directory.example.org:636"></label>
+                <label>Base DN<input name="base_dn" placeholder="ou=People,dc=example,dc=org"></label>
+                <label>Атрибут логина<input name="attribute" placeholder="uid"></label>
+                <label>Bind DN<input name="bind_dn"></label>
+                <label>Пароль Bind DN<input name="bind_password" type="password" autocomplete="new-password"></label>
+                <label>CA каталога в PEM<textarea name="ca" rows="3"></textarea></label>
+                <button class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Сохранить LDAP</button>
+              </form>
+              <form id="identity-radius" class="space-y-3 rounded-xl border bg-white p-5">
+                <h2 class="font-semibold">Внешний RADIUS</h2>
+                <label>Сервер и UDP-порт<input name="address" placeholder="192.0.2.25:1812"></label>
+                <label>Общий секрет<input name="secret" type="password" autocomplete="new-password"></label>
+                <button class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Сохранить RADIUS</button>
+              </form>
+            </div>
+          </div>
+        </section>
+        <section id="page-sysctl" class="page" hidden>
+          <div class="rounded-xl border bg-white p-5">
+            <p id="sysctl-status" class="text-sm" role="status"></p>
+            <dl id="sysctl-settings" class="my-4 divide-y"></dl>
+            <p id="sysctl-skipped" class="my-3 text-sm text-slate-500"></p>
+            <div class="flex flex-wrap gap-3">
+              <button id="sysctl-plan" class="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Обновить расчёт</button>
+              <button id="sysctl-apply" disabled class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Применить профиль</button>
+              <button id="sysctl-restore" disabled class="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Восстановить прежние значения</button>
+            </div>
+          </div>
+        </section>
+        <section id="page-overview" class="page">
+          <details class="mb-4 rounded-xl border border-slate-200 bg-white px-5 py-3">
+            <summary class="cursor-pointer text-sm font-medium text-teal-800">Настроить дашборд</summary>
+            <div id="overview-layout" class="mt-3 grid gap-2 sm:grid-cols-2"></div>
+          </details>
+          <div id="overview-widgets" class="grid gap-4 xl:grid-cols-2">
+            <div data-widget="device" data-title="Состояние устройства" class="grid gap-4 sm:grid-cols-3 xl:col-span-2">
+              <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Интерфейсы узла</p><p id="interface-count" class="mt-3 text-3xl font-semibold">—</p></div>
+              <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Ревизия черновика</p><p id="revision" class="mt-3 text-3xl font-semibold">—</p></div>
+              <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm text-slate-500">Режим устройства</p><p id="device-mode" class="mt-3 text-lg font-semibold text-teal-700">Предпросмотр</p><p id="device-mode-detail" class="mt-2 text-xs text-slate-500">Проверка подключения к агенту</p></div>
+            </div>
+            <section data-widget="system" data-title="Загрузка системы" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+              <div class="flex flex-wrap items-baseline justify-between gap-2"><h2 class="font-semibold">Загрузка системы</h2><span id="overview-uptime" class="text-xs text-slate-500"></span></div>
+              <div class="my-3 flex flex-wrap gap-x-5 gap-y-1 text-sm"><span class="font-medium text-teal-800">CPU <output id="overview-cpu">—</output></span><span class="font-medium text-blue-800">RAM <output id="overview-memory">—</output></span></div>
+              <canvas id="overview-system-chart" class="block h-36 w-full" role="img" aria-label="Загрузка CPU и памяти за две минуты"></canvas>
+              <p id="overview-system-note" class="mt-2 text-xs text-slate-500">Собираем замеры…</p>
+            </section>
+            <section data-widget="interface" data-title="Трафик интерфейса" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+              <div class="flex flex-wrap items-baseline justify-between gap-2"><h2 class="font-semibold">Трафик интерфейса</h2><select id="overview-interface" aria-label="Интерфейс для графика" class="w-auto max-w-full py-1 text-sm" disabled><option>Загрузка…</option></select></div>
+              <div class="my-3 flex flex-wrap gap-x-5 gap-y-1 text-sm"><span class="font-medium text-teal-800">Входящий <output id="overview-rx">—</output></span><span class="font-medium text-blue-800">Исходящий <output id="overview-tx">—</output></span></div>
+              <canvas id="overview-link-chart" class="block h-36 w-full" role="img" aria-label="Входящий и исходящий трафик за две минуты"></canvas>
+              <p id="overview-link-note" class="mt-2 text-xs text-slate-500">Собираем замеры…</p>
+            </section>
+            <section data-widget="modules" data-title="Запущенные службы" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+              <h2 class="font-semibold">Запущенные службы</h2>
+              <ul id="overview-running" class="mt-3 divide-y divide-slate-100 text-sm"></ul>
+              <p id="overview-running-note" class="mt-2 text-xs text-slate-500">Проверяем состояние…</p>
+            </section>
+            <section data-widget="vpn" data-title="Подключения VPN" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+              <h2 class="font-semibold">Подключения VPN</h2>
+              <ul id="overview-vpn" class="mt-3 max-h-52 overflow-auto divide-y divide-slate-100 text-sm"></ul>
+              <p id="overview-vpn-note" class="mt-2 text-xs text-slate-500">Проверяем состояние…</p>
+            </section>
+            <section data-widget="ioc" data-title="Актуальность IOC" class="min-w-0 rounded-xl border border-slate-200 bg-white p-5">
+              <div class="flex flex-wrap items-baseline justify-between gap-2"><h2 class="font-semibold">Актуальность IOC</h2><a href="#feed" class="text-sm text-teal-800 hover:underline">Security Feed</a></div>
+              <p id="overview-ioc-status" class="mt-3 font-medium">Проверяем подписку…</p>
+              <dl id="overview-ioc-details" class="mt-2 space-y-1 text-sm text-slate-600"></dl>
+              <p id="overview-ioc-error" class="mt-2 text-xs text-red-700"></p>
+            </section>
+            <section data-widget="audit" data-title="Последние изменения" class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                <h2 class="font-semibold">Последние изменения</h2>
+                <a href="#audit" class="text-sm text-teal-800 hover:underline">Открыть аудит</a>
+              </div>
+              <div id="overview-audit" class="divide-y divide-slate-100"></div>
+            </section>
+          </div>
+        </section>
+        <section id="page-network" class="page" hidden><div class="mb-5 text-sm text-slate-500" id="inventory-source"></div><div class="overflow-x-auto rounded-xl border border-slate-200 bg-white"><table class="w-full text-sm text-left"><thead class="bg-slate-100 text-xs text-slate-500"><tr><th class="p-4">Интерфейс</th><th class="p-4">Состояние</th><th class="p-4">Адреса</th><th class="p-4">MTU</th><th class="p-4">MAC</th></tr></thead><tbody id="interfaces" class="divide-y divide-slate-100"></tbody></table></div><div class="mt-8 rounded-xl border border-slate-200 bg-white p-5">
+<h2 class="text-lg font-semibold">Настройка сети</h2><p id="network-state" class="mt-2 text-sm text-slate-500">Загрузка…</p><p id="network-lan" class="mt-2 text-sm text-teal-800"></p>
+<div class="mt-4 flex flex-wrap items-end gap-3"><button id="network-save" class="rounded-lg bg-teal-700 px-4 py-2.5 text-white text-sm">Сохранить черновик сети</button><button id="network-plan" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm">Проверить изменения</button><label class="max-w-48">Подтверждение, сек.<input id="network-timeout" type="number" min="30" max="600" value="120"></label><button id="network-apply" disabled class="rounded-lg bg-teal-700 px-4 py-2.5 text-white text-sm">Применить сеть</button></div><p id="network-dirty" class="mt-3 text-xs text-slate-500">Нет несохранённых изменений</p>
+<div id="network-pending" hidden class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4"><p id="network-pending-text" class="text-sm text-amber-900"></p><p id="network-countdown" role="status" class="mt-2 font-semibold"></p><div class="mt-4 flex flex-wrap gap-3"><button id="network-confirm" class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white">Доступ работает — сохранить сеть</button><button id="network-rollback" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm">Вернуть предыдущую сеть</button></div></div><div id="network-history" class="mt-4 text-xs text-slate-500 space-y-2"></div></div>
+<h2 class="mt-8 text-lg font-semibold">Управляемые интерфейсы</h2><p class="mt-2 text-sm text-slate-500">В черновик добавляются только интерфейсы, которыми должен управлять GFW. Физический порт не удаляется из оборудования.</p><div id="network-links" class="mt-4 rounded-xl border border-slate-200 bg-white divide-y divide-slate-100"></div>
+<form id="network-link-form" class="mt-5 grid gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:grid-cols-2 xl:grid-cols-3">
+<label>Имя интерфейса<input name="name" required maxlength="15" placeholder="vlan100, br0 или bond0"></label><label>Тип<select name="type" aria-label="Тип интерфейса"><option value="vlan">VLAN · подсеть с тегом</option><option value="bridge">Мост · объединение портов</option><option value="bond">Агрегация · резервирование каналов</option><option value="physical">Существующий Ethernet-порт</option></select></label><label>MTU<input name="mtu" type="number" value="1500" min="576" max="9216" required></label>
+<label>Родитель VLAN<input name="parent" placeholder="Например, enp2s0" maxlength="15"></label><label>Номер VLAN<input name="vlan" type="number" min="1" max="4094" placeholder="1–4094"></label><label>Режим агрегации<select name="bond_mode" aria-label="Режим агрегации"><option value="active-backup">Основной и резервный канал</option><option value="802.3ad">LACP · 802.3ad</option></select></label>
+<label>Порты моста или агрегации<input name="members" placeholder="enp2s0, enp3s0"></label><label>IP-адреса с маской<textarea name="addresses" rows="3" placeholder="192.168.10.1/24&#10;2001:db8:10::1/64"></textarea></label><label>Состояние<select name="up" aria-label="Состояние интерфейса"><option value="yes">Включён</option><option value="no">Выключен</option></select></label>
+<label class="flex items-start gap-3 sm:col-span-2"><input name="adopt" type="checkbox" class="mt-1 size-4 w-4"><span>Передать существующий интерфейс под управление GFW. Его статические IP, маршруты и поддерживаемые файлы etcnet будут заменены по этому черновику.</span></label><div class="flex gap-3 items-end"><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Добавить / обновить</button><button id="network-link-reset" type="button" class="text-sm text-slate-500">Очистить форму</button></div></form>
+<h2 class="mt-8 text-lg font-semibold">Статические маршруты</h2><div id="network-routes" class="mt-4 rounded-xl border border-slate-200 bg-white divide-y divide-slate-100"></div><form id="network-route-form" class="mt-4 grid gap-4 rounded-xl border border-slate-200 bg-white p-6 sm:grid-cols-2 xl:grid-cols-4"><label>Сеть назначения<input name="destination" required placeholder="0.0.0.0/0 или 10.20.0.0/16"></label><label>Шлюз<input name="gateway" placeholder="192.168.10.254"></label><label>Интерфейс<input name="interface" required maxlength="15" placeholder="vlan100"></label><label>Метрика<input name="metric" required type="number" value="100" min="1" max="65535"></label><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Добавить маршрут</button></form>
+<section id="network-preview" hidden class="mt-8"><h2 class="text-lg font-semibold">План и файлы конфигурации</h2><pre id="network-preview-text" class="mt-4 overflow-auto rounded-xl bg-slate-950 p-6 text-xs leading-6 text-slate-200"></pre></section></section>
+        <section id="page-firewall" class="page" hidden>
+          <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">Сначала сохраните и проверьте черновик. Применение меняет правила на Linux-узле. Подтвердите доступ к панели до окончания таймера, иначе агент автоматически вернёт предыдущие правила.</div>
+          <section class="mb-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="font-semibold">Применение правил</h2><p id="apply-status" class="mt-2 text-sm text-slate-500">Проверка агента…</p><p id="anti-lockout" class="mt-3 text-sm text-teal-800"></p><p class="mt-2 text-sm"><a href="#feed" class="text-teal-800 underline">Security Feed</a> · <span id="firewall-feed-draft"></span></p><div class="mt-4 flex flex-wrap items-end gap-3"><label class="max-w-48">Время на подтверждение, сек.<input id="confirm-timeout" type="number" min="30" max="600" value="120"></label><button id="apply" disabled class="rounded-lg bg-teal-700 px-4 py-2.5 text-white text-sm hover:bg-teal-800">Применить сохранённое</button></div><div id="pending-change" hidden class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4"><p id="pending-description" class="text-sm text-amber-900"></p><p id="countdown" role="status" class="mt-2 font-semibold text-amber-900"></p><div class="mt-4 flex flex-wrap gap-3"><button id="confirm-change" class="rounded-lg bg-teal-700 px-4 py-2 text-white text-sm">Доступ работает — подтвердить</button><button id="rollback-change" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm">Вернуть предыдущие правила</button></div></div><div id="change-history" class="mt-4 text-xs text-slate-500 space-y-2"></div></section><div class="flex flex-wrap items-center gap-3 mb-5"><button id="save" class="rounded-lg bg-teal-700 px-4 py-2 text-white text-sm hover:bg-teal-800">Сохранить черновик</button><button id="preview" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-100">Предпросмотр nftables</button><span id="dirty" class="text-xs text-slate-500">Нет несохранённых изменений</span></div>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white"><table class="w-full text-left text-sm"><thead class="bg-slate-100 text-xs text-slate-500"><tr><th class="p-4">Правило</th><th class="p-4">Направление трафика</th><th class="p-4">Источник → назначение</th><th class="p-4">Сервис</th><th class="p-4">Действие</th><th class="p-4">Порядок</th></tr></thead><tbody id="rules" class="divide-y divide-slate-100"></tbody></table></div>
+          <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><label class="flex items-start gap-3"><input id="stateful" type="checkbox" class="mt-1 size-4 w-4"><span>Stateful-фильтрация: автоматически разрешать ответы на соединения, допущенные текущей политикой</span></label><p class="mt-2 text-xs leading-6 text-slate-500">Исходное направление проверяется по правилам на каждом пакете. После изменения политики прежнее разрешение соединения пересматривается.</p></div>
+<h2 class="mt-8 text-lg font-semibold">Добавить или изменить правило</h2>
+          <form id="rule-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 rounded-xl border border-slate-200 bg-white p-6">
+            <input name="id" type="hidden">
+<label>Название<input name="name" required maxlength="100" placeholder="Например, DNS из LAN"></label>
+            <label>Направление трафика<select name="chain" aria-label="Направление трафика"><option value="forward">Через устройство · между сетями</option><option value="input">К устройству · его сервисы</option><option value="output">От устройства · его запросы</option></select></label>
+            <label>Семейство<select name="family"><option value="ipv4">IPv4</option><option value="ipv6">IPv6</option><option value="any">IPv4 и IPv6</option></select></label>
+            <label>Из зоны<select name="source_zone" data-policy-zone aria-label="Зона источника"></select></label><label>В зону<select name="destination_zone" data-policy-zone aria-label="Зона назначения"></select></label><label>Сервис из группы<select name="service" data-policy-service aria-label="Сервис правила"></select></label><label>Группа адресов источника<select name="source_group" data-policy-address aria-label="Группа источника"></select></label><label>Группа адресов назначения<select name="destination_group" data-policy-address aria-label="Группа назначения"></select></label><label>Источник IP/CIDR<input name="source" placeholder="192.168.10.0/24" spellcheck="false"></label>
+            <label>Назначение IP/CIDR<input name="destination" placeholder="Пусто — любой адрес" spellcheck="false"></label>
+            <label>Протокол<select name="protocol"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="any">Любой</option><option value="icmp">ICMP (IPv4)</option><option value="icmpv6">ICMPv6</option></select></label>
+            <label>Порт назначения<input name="destination_port" type="number" min="1" max="65535" placeholder="Пусто — любой порт"></label>
+            <label>Действие<select name="action"><option value="accept">Разрешить</option><option value="drop">Отбросить</option><option value="reject">Отклонить</option></select></label>
+            <label class="sm:col-span-2">Обработка транзита<select name="flow_policy"><option value="normal">Обычный путь</option><option value="required">Обязательное журналирование</option><option value="fast">Разрешить ускорение TCP/UDP</option></select></label><div class="self-end"><button class="w-full rounded-lg border border-teal-700 px-4 py-2.5 text-sm font-medium text-teal-800 hover:bg-teal-50">Добавить в черновик</button></div>
+          </form>
+          <details class="mt-8 rounded-xl border border-slate-200 bg-white p-5" open><summary class="cursor-pointer text-lg font-semibold">Зоны сети</summary><p class="mt-3 text-sm text-slate-500">Каждый интерфейс относится к одной зоне. Доступ между зонами задаётся правилами.</p><div id="zones-list" class="mt-4 divide-y divide-slate-100"></div><button id="zone-presets" class="mt-3 text-sm text-teal-800">Добавить стандартные LAN / WAN / DMZ / VPN</button><form id="zone-form" class="mt-4 grid gap-4 sm:grid-cols-3"><input name="id" type="hidden"><label>Название зоны<input name="name" required maxlength="100" placeholder="Например, Гостевая сеть"></label><label>Назначение зоны<select name="kind" aria-label="Назначение зоны"><option value="lan">LAN · внутренняя сеть</option><option value="wan">WAN · внешняя сеть</option><option value="dmz">DMZ · серверы</option><option value="vpn">VPN</option><option value="management">Управление</option><option value="custom">Другая</option></select></label><label>Интерфейсы зоны<input name="interfaces" placeholder="br-lan, vlan100"></label><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Сохранить зону в черновик</button></form></details>
+<details class="mt-5 rounded-xl border border-slate-200 bg-white p-5"><summary class="cursor-pointer text-lg font-semibold">Группы адресов и сервисов</summary><h3 class="mt-5 font-semibold">Группы адресов</h3><div id="address-list" class="mt-3 divide-y divide-slate-100"></div><form id="address-form" class="mt-4 grid gap-4 sm:grid-cols-3"><input name="id" type="hidden"><label>Название группы<input name="name" required maxlength="100" placeholder="Серверы приложений"></label><label>Семейство группы<select name="family" aria-label="Семейство группы"><option value="ipv4">IPv4</option><option value="ipv6">IPv6</option></select></label><label>IP и подсети<textarea name="networks" required rows="3" placeholder="10.20.0.0/24&#10;10.30.0.5"></textarea></label><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Сохранить группу адресов</button></form><h3 class="mt-6 font-semibold">Группы сервисов</h3><div id="service-list" class="mt-3 divide-y divide-slate-100"></div><form id="service-form" class="mt-4 grid gap-4 sm:grid-cols-3"><input name="id" type="hidden"><label>Название сервиса<input name="name" required maxlength="100" placeholder="Веб-сервисы"></label><label>Транспорт<select name="protocol" aria-label="Транспорт сервиса"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="tcp_udp">TCP и UDP</option></select></label><label>Порты и диапазоны<input name="ports" required placeholder="80, 443, 8000-8100"></label><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Сохранить сервис</button></form></details>
+<details class="mt-5 rounded-xl border border-slate-200 bg-white p-5" open><summary class="cursor-pointer text-lg font-semibold">NAT и проброс портов</summary><p class="mt-3 text-sm leading-6 text-slate-500">NAT преобразует IPv4-адреса. Для проброса можно явно включить разрешение трафика; пользовательские запреты в списке выше имеют приоритет. Существующие NAT-соединения сохраняют отображение до завершения.</p><div id="nat-list" class="mt-4 divide-y divide-slate-100"></div><form id="nat-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><input name="id" type="hidden"><label>Название NAT<input name="name" required maxlength="100"></label><label>Вид преобразования<select name="type" aria-label="Вид NAT"><option value="masquerade">Выход через адрес интерфейса</option><option value="snat">Фиксированный исходящий IP</option><option value="no_snat">Исключение из исходящего NAT</option><option value="dnat">Проброс входящего порта</option></select></label><label>Из зоны<select name="source_zone" data-policy-zone required aria-label="Входная зона NAT"></select></label><label>В зону<select name="destination_zone" data-policy-zone required aria-label="Выходная зона NAT"></select></label><label>Сеть источника, необязательно<input name="source" placeholder="192.168.10.0/24"></label><label>Назначение, необязательно<input name="destination" placeholder="Внешний IP/32 для hairpin"></label><label>Протокол NAT<select name="protocol" aria-label="Протокол NAT"><option value="any">Любой</option><option value="tcp">TCP</option><option value="udp">UDP</option></select></label><label>Внешний порт / порт назначения<input name="destination_port" type="number" min="1" max="65535"></label><label>Новый IPv4-адрес<input name="translated_address" placeholder="Для SNAT или внутреннего сервера"></label><label>Порт внутреннего сервера<input name="translated_port" type="number" min="1" max="65535"></label><label class="flex items-start gap-3"><input name="allow_forward" type="checkbox" class="mt-1 size-4 w-4"><span>Разрешить перенаправленный трафик. Требуется stateful-режим.</span></label><label class="flex items-start gap-3"><input name="hairpin" type="checkbox" class="mt-1 size-4 w-4"><span>Hairpin: доступ из внутренней зоны через внешний IP. Нужны внешний IP/32 и разрешение проброса.</span></label><label class="flex items-start gap-3"><input name="enabled" type="checkbox" checked class="mt-1 size-4 w-4"><span>Преобразование включено</span></label><div class="flex items-end gap-3"><button class="rounded-lg border border-teal-700 px-4 py-2.5 text-sm text-teal-800">Сохранить NAT в черновик</button><button id="nat-reset" type="button" class="text-sm text-slate-500">Очистить форму</button></div></form></details>
+<details id="flow-section" class="mt-5 rounded-xl border border-slate-200 bg-white p-5" open>
+  <summary class="cursor-pointer text-lg font-semibold">Ускорение транзита TCP/UDP</summary>
+  <p class="mt-2 text-sm text-slate-600">Выберите порты и включите ускорение в нужных разрешающих правилах. Трафик IPS и правил с обязательным журналированием идёт обычным путём.</p>
+  <form id="flow-form" class="mt-4 space-y-4">
+    <label class="flex items-center gap-3"><input type="checkbox" name="enabled" class="m-0 size-4 w-4">Включить программное ускорение</label>
+    <fieldset id="flow-ports" disabled><legend class="text-sm font-medium">Транзитные интерфейсы</legend><div id="flow-interfaces" class="mt-2 flex flex-wrap gap-3"></div></fieldset>
+    <button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Обновить черновик</button>
+  </form>
+  <p id="flow-draft" class="mt-2 text-xs text-slate-500"></p>
+  <div class="mt-5 border-t border-slate-200 pt-4">
+    <p id="flow-status" class="text-sm font-medium" role="status"></p>
+    <p id="flow-reason" class="mt-2 text-sm text-slate-600"></p>
+    <ul id="flow-excluded" class="mt-2 space-y-1 text-sm text-slate-600"></ul>
+    <dl id="flow-counters" hidden class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div><dt class="text-xs text-slate-500">Добавлено соединений TCP</dt><dd id="flow-tcp" class="mt-1 font-semibold"></dd></div>
+      <div><dt class="text-xs text-slate-500">Добавлено соединений UDP</dt><dd id="flow-udp" class="mt-1 font-semibold"></dd></div>
+      <div><dt class="text-xs text-slate-500">Пакеты через flowtable</dt><dd id="flow-packets" class="mt-1 font-semibold"></dd></div>
+      <div><dt class="text-xs text-slate-500">Байты через flowtable</dt><dd id="flow-bytes" class="mt-1 font-semibold"></dd></div>
+    </dl>
+  </div>
+</details>
+<section id="preview-section" hidden class="mt-8"><h2 class="text-lg font-semibold">Результат компиляции</h2><ul id="warnings" class="mt-3 text-sm text-amber-800 space-y-2"></ul><pre id="nftables" class="mt-4 overflow-auto rounded-xl bg-slate-950 p-6 text-xs leading-6 text-slate-200"></pre></section>
+        </section>
+        <section id="page-services" class="page" hidden>
+ <div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">DNS и DHCP</h2><p class="mt-2 text-sm leading-6 text-slate-500">Модули входят в GFW. Сохранение меняет черновик; применение запускает сервисы на Linux-агенте. Разрешения доступа задаются в межсетевом экране отдельно.</p><p id="services-state" class="mt-3 text-sm"></p><p id="services-runtime" class="mt-2 text-sm text-slate-500"></p><div class="mt-4 flex flex-wrap items-center gap-3"><label>Подтверждение, сек.<input id="services-timeout" type="number" min="30" max="600" value="120"></label><button id="services-save" class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить сервисы</button><button id="services-plan" class="rounded-lg border border-slate-300 px-4 py-2 text-sm">Проверить сервисы</button><button id="services-apply" class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Применить сервисы</button></div><p id="services-dirty" class="mt-3 text-xs text-slate-500">Нет несохранённых изменений</p><div id="services-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4"><p id="services-pending-text" class="text-sm"></p><p id="services-countdown" class="mt-2 text-sm"></p><div class="mt-3 flex gap-4"><button id="services-confirm" class="text-sm text-teal-800">Подтвердить сервисы</button><button id="services-rollback" class="text-sm text-red-700">Откатить сервисы</button></div></div><pre id="services-preview" hidden class="mt-4 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-xs text-slate-100"></pre></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">DNS · разрешение имён</h2><p class="mt-2 text-sm"><a href="#feed" class="text-teal-800 underline">Security Feed</a> · <span id="dns-feed-draft"></span></p><form id="dns-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><label class="flex items-center gap-3"><input name="enabled" type="checkbox" class="size-4 w-4">Включить DNS</label><label>Интерфейс DNS<input name="interface" maxlength="15" placeholder="br-lan"></label><label>IP DNS на интерфейсе<input name="address" placeholder="192.168.10.1"></label><label>Порт DNS<input name="port" type="number" min="1" max="65535" required></label><label>Режим DNS<select name="mode"><option value="forward">Пересылка на upstream</option><option value="recursive">Собственная рекурсия</option></select></label><label>Размер DNS-кеша<input name="cache_size" type="number" min="0" max="1000000" required></label><label>Upstream IP:порт<textarea name="upstreams" rows="3" placeholder="1.1.1.1:53"></textarea></label><label>Разрешённые сети DNS<textarea name="allowed_clients" rows="3" placeholder="192.168.10.0/24"></textarea></label><label class="flex items-center gap-3"><input name="dnssec" type="checkbox" class="size-4 w-4">Проверять DNSSEC</label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Обновить DNS в черновике</button></form><h3 class="mt-6 font-medium">Локальные DNS-зоны</h3><div id="dns-zones" class="mt-3 divide-y divide-slate-100"></div><form id="dns-zone-form" class="mt-4 grid gap-4"><label>Имя DNS-зоны<input name="name" required placeholder="home.arpa."></label><label>Записи DNS в формате зоны<textarea name="records" rows="6" required placeholder="home.arpa. 300 IN SOA ns.home.arpa. hostmaster.home.arpa. 1 3600 600 86400 300&#10;home.arpa. 300 IN NS ns.home.arpa.&#10;ns.home.arpa. 300 IN A 192.168.10.1"></textarea></label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить DNS-зону в черновик</button></form></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">DHCPv4 · выдача адресов</h2><form id="dhcp-form" class="mt-4 grid gap-4 sm:grid-cols-3"><label class="flex items-center gap-3"><input name="enabled" type="checkbox" class="size-4 w-4">Включить DHCP</label><label>Порт DHCP<input name="port" type="number" min="1" max="65535" required></label><label>Срок аренды, сек.<input name="lease_seconds" type="number" min="60" max="604800" required></label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Обновить DHCP в черновике</button></form><p class="mt-3 text-xs leading-6 text-slate-500">Для обычных клиентов нужен порт 67. Каждый интерфейс обслуживает один пул; для другой сети создайте VLAN или отдельный интерфейс. Уже выданные аренды сохраняются при откате.</p><div id="dhcp-pools" class="mt-4 divide-y divide-slate-100"></div><form id="dhcp-pool-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><input name="id" type="hidden"><label>Название пула<input name="name" required maxlength="100"></label><label>Интерфейс DHCP<input name="interface" required maxlength="15" placeholder="vlan100"></label><label>IP DHCP-сервера<input name="address" required placeholder="192.168.10.1"></label><label>Подсеть DHCP<input name="network" required placeholder="192.168.10.0/24"></label><label>Начало диапазона<input name="start" required placeholder="192.168.10.100"></label><label>Конец диапазона<input name="end" required placeholder="192.168.10.200"></label><label>Шлюз DHCP<input name="gateway" required placeholder="192.168.10.1"></label><label>DNS для клиентов<input name="dns" required placeholder="192.168.10.1"></label><label>Домен DHCP<input name="domain" placeholder="home.arpa"></label><label class="sm:col-span-2">Резервации: MAC IP имя, по одной строке<textarea name="reservations" rows="4" placeholder="02:11:22:33:44:55 192.168.10.20 printer"></textarea></label><div class="flex items-end gap-3"><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить пул в черновик</button><button id="pool-reset" type="button" class="text-sm text-slate-500">Очистить пул</button></div></form></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Аренды и последние запросы DNS</h2><button id="services-observe" class="mt-3 text-sm text-teal-800">Обновить аренды и запросы</button><p class="mt-2 text-xs text-slate-500">До 200 аренд на пул и последние 100 запросов DNS. Журнал DNS хранится в памяти агента.</p><div id="services-leases" class="mt-4 space-y-2 text-sm"></div><pre id="services-dns-logs" class="mt-4 overflow-auto whitespace-pre-wrap text-xs text-slate-500"></pre></div>
+</section>
+
+<section id="page-wireguard" class="page" hidden>
+ <div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">WireGuard VPN</h2><p class="mt-2 text-sm leading-6 text-slate-500">Туннели ядра Linux. Сначала сохраните черновик и проверьте план. Разрешения UDP и трафика из VPN задаются в межсетевом экране отдельно. LAN защищён от перехвата адресов и маршрутов.</p><p id="wg-state" class="mt-3 text-sm"></p><div class="mt-4 flex flex-wrap items-end gap-3"><label>Подтверждение VPN, сек.<input id="wg-timeout" type="number" min="30" max="600" value="120"></label><button id="wg-save" class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить WireGuard</button><button id="wg-plan" class="rounded-lg border border-slate-300 px-4 py-2 text-sm">Проверить WireGuard</button><button id="wg-apply" class="rounded-lg bg-teal-700 px-4 py-2 text-sm text-white disabled:opacity-40">Применить WireGuard</button></div><p id="wg-dirty" class="mt-3 text-xs text-slate-500">Нет несохранённых изменений</p><div id="wg-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4"><p id="wg-pending-text"></p><p id="wg-countdown" class="mt-2"></p><div class="mt-3 flex gap-4"><button id="wg-confirm" class="text-sm text-teal-800">Подтвердить VPN</button><button id="wg-rollback" class="text-sm text-red-700">Откатить VPN</button></div></div><pre id="wg-preview" hidden class="mt-4 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-xs text-slate-100"></pre><div id="wg-tunnels" class="mt-5 divide-y divide-slate-100"></div></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Создать или изменить туннель</h2><form id="wg-tunnel-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><input name="id" type="hidden"><input name="key_ref" type="hidden"><label>Имя интерфейса WireGuard<input name="name" required maxlength="15" placeholder="wg0"></label><label>UDP-порт WireGuard<input name="listen_port" type="number" min="1" max="65535" required value="51820"></label><label>MTU WireGuard<input name="mtu" type="number" min="576" max="9000" required value="1420"></label><label>Адреса туннеля IP/префикс<textarea name="addresses" required rows="3" placeholder="10.50.0.1/24"></textarea></label><label>Внешний endpoint для клиентов<input name="client_endpoint" placeholder="vpn.example.org:51820"></label><label>Публичный ключ туннеля<input name="public_key" readonly required placeholder="Создайте ключ на агенте"></label><button id="wg-tunnel-key" type="button" class="text-left text-sm text-teal-800">Создать ключ туннеля</button><label class="flex items-center gap-3"><input name="enabled" type="checkbox" checked class="size-4 w-4">Туннель включён</label><label class="flex items-center gap-3"><input name="install_routes" type="checkbox" checked class="size-4 w-4">Добавлять маршруты AllowedIPs</label><p class="text-xs leading-6 text-slate-500 sm:col-span-2">Автоматический default route и пересечения с подключёнными сетями не допускаются. Генерация нового ключа меняет идентичность туннеля после применения.</p><div class="flex items-end gap-3"><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить туннель в черновик</button><button id="wg-tunnel-reset" type="button" class="text-sm text-slate-500">Очистить туннель</button></div></form></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Добавить или изменить peer</h2><form id="wg-peer-form" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><input name="id" type="hidden"><input name="key_ref" type="hidden"><input name="psk_ref" type="hidden"><label>Туннель peer<select name="tunnel_id" required></select></label><label>Название peer<input name="name" required maxlength="100"></label><label>Публичный ключ peer<input name="public_key" required placeholder="Вставьте ключ узла или создайте ключ клиента"></label><button id="wg-client-key" type="button" class="text-left text-sm text-teal-800">Создать ключ клиента</button><button id="wg-psk-key" type="button" class="text-left text-sm text-teal-800">Создать дополнительный PSK</button><p id="wg-psk-label" class="text-xs text-slate-500">PSK не выбран</p><label>AllowedIPs на сервере<textarea name="allowed_ips" required rows="3" placeholder="10.50.0.2/32"></textarea></label><label>Endpoint удалённого peer, необязательно<input name="endpoint" placeholder="198.51.100.2:51820"></label><label>Keepalive, сек.<input name="keepalive" type="number" min="0" max="65535" required value="25"></label><label class="flex items-center gap-3"><input name="enabled" type="checkbox" checked class="size-4 w-4">Peer включён</label><label>Адреса клиентского профиля<textarea name="client_addresses" rows="3" placeholder="10.50.0.2/32"></textarea></label><label>Маршруты клиентского профиля<textarea name="client_routes" rows="3" placeholder="10.50.0.0/24"></textarea></label><label>DNS клиентского профиля<input name="client_dns" placeholder="10.50.0.1"></label><p class="text-xs leading-6 text-slate-500 sm:col-span-2">Экспорт содержит закрытый ключ клиента и PSK. Он доступен только для подтверждённого черновика, если ключ клиента создан в GFW. Для собственного ключа peer генерация не требуется.</p><div class="flex items-end gap-3"><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить peer в черновик</button><button id="wg-peer-reset" type="button" class="text-sm text-slate-500">Очистить peer</button></div></form></div>
+</section>
+
+<section id="page-fess" class="page" hidden>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <form id="fess-form" class="grid content-start gap-3 rounded-xl border bg-white p-5">
+      <h2 class="font-semibold">Публикации FESS</h2>
+      <label class="flex items-center gap-2"><input name="enabled" type="checkbox">Включить FESS</label>
+      <label>Адрес прослушивания<input name="listen" placeholder="0.0.0.0:443"></label>
+      <label class="flex items-center gap-2"><input name="tls" type="checkbox">Принимать HTTPS</label>
+      <label>Маршрут<select id="fess-site"></select></label>
+      <label>Домен<input name="host" placeholder="app.example.org"></label>
+      <label>Префикс пути<input name="path" value="/"></label>
+      <label>Upstream<input name="upstream" placeholder="http://192.168.10.20:8080"></label>
+      <label>Сертификат сайта<select name="certificate"></select></label>
+      <label>Режим WAF<select name="mode"><option value="log">Журналировать</option><option value="block">Блокировать</option></select></label>
+      <label>Локальные правила JSON<textarea name="rules" rows="5" class="font-mono text-xs" placeholder='[{"id":"deny-env","name":"Файл .env","action":"block","priority":10,"condition":{"path_exact":"/.env"}}]'></textarea></label>
+      <label class="flex items-center gap-2"><input name="use_pack" type="checkbox">Включить импортированный набор WAF</label>
+      <p id="fess-pack" class="text-sm text-slate-600"></p>
+      <div class="flex flex-wrap gap-2">
+        <button id="fess-save" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white">Сохранить черновик</button>
+        <button id="fess-delete" type="button" class="rounded-lg border px-3 py-2 text-sm">Удалить маршрут</button>
+      </div>
+    </form>
+    <div class="grid content-start gap-5">
+      <section class="rounded-xl border bg-white p-5">
+        <h2 class="font-semibold">Применение</h2>
+        <p id="fess-state" class="mt-2 text-sm text-slate-600" role="status"></p>
+        <p id="fess-result" class="mt-2 text-sm text-slate-700" role="status"></p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="fess-plan" class="rounded-lg border px-3 py-2 text-sm">Проверить</button>
+          <button id="fess-apply" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white">Применить на 120 с</button>
+          <button id="fess-confirm" class="rounded-lg border px-3 py-2 text-sm">Подтвердить</button>
+          <button id="fess-rollback" class="rounded-lg border px-3 py-2 text-sm">Откатить</button>
+        </div>
+      </section>
+      <section class="rounded-xl border bg-white p-5">
+        <h2 class="font-semibold">Наборы WAF из Security Feed</h2>
+        <div class="mt-3 grid gap-2">
+          <button id="fess-catalog" class="rounded-lg border px-3 py-2 text-sm">Загрузить каталог</button>
+          <label>Набор<select id="fess-feed-pack"></select></label>
+          <button id="fess-import" class="rounded-lg border px-3 py-2 text-sm">Импортировать в черновик маршрута</button>
+        </div>
+      </section>
+      <section class="rounded-xl border bg-white p-5">
+        <h2 class="font-semibold">Срабатывания WAF</h2>
+        <button id="fess-events-refresh" class="mt-3 rounded-lg border px-3 py-2 text-sm">Обновить журнал</button>
+        <ul id="fess-events" class="mt-3 divide-y text-sm"></ul>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section id="page-ids" class="page" hidden>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <form id="ids-form" class="grid content-start gap-4 rounded-xl border border-slate-200 bg-white p-5">
+      <div>
+        <h2 class="font-semibold">Настройки Suricata</h2>
+        <p class="mt-2 text-sm text-slate-600">IDS наблюдает за трафиком. IPS проверяет разрешённый транзит и может блокировать пакеты.</p>
+      </div>
+      <label class="flex items-center gap-2 text-sm"><input name="enabled" type="checkbox">Включить Suricata</label>
+      <label class="grid gap-1 text-sm">Режим
+        <select name="mode" class="rounded border p-2">
+          <option value="ids">IDS · наблюдение</option>
+          <option value="ips">IPS · проверка и блокировка</option>
+        </select>
+      </label>
+      <div id="ips-options" hidden class="grid gap-2">
+        <label class="grid gap-1 text-sm">При отказе движка или переполнении очереди
+          <select name="failure_policy" class="rounded border p-2">
+            <option value="closed">Блокировать выбранный транзит (fail-closed)</option>
+            <option value="open">Пропускать выбранный транзит (fail-open)</option>
+          </select>
+        </label>
+        <p class="text-xs text-slate-600">Проверяются оба направления через выбранные интерфейсы. Доступ к панели через LAN остаётся вне очереди.</p>
+      </div>
+      <fieldset>
+        <legend class="text-sm font-medium">Интерфейсы наблюдения</legend>
+        <div id="ids-interfaces" class="mt-2 flex flex-wrap gap-3 text-sm"></div>
+      </fieldset>
+      <label class="grid gap-1 text-sm">Защищаемые подсети (HOME_NET)
+        <textarea name="home_net" rows="3" placeholder="192.168.10.0/24" class="rounded border p-2"></textarea>
+      </label>
+      <label class="grid gap-1 text-sm">Локальные правила Suricata
+        <textarea name="rules" spellcheck="false" rows="8" maxlength="262144" class="rounded border p-2 font-mono text-xs" placeholder='alert icmp any any -> $HOME_NET any (msg:"GFW test"; itype:8; sid:1000001; rev:1;)'></textarea>
+      </label>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="ids-save" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Сохранить черновик</button>
+        <button id="ids-plan" type="button" disabled class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Проверить правила</button>
+      </div>
+      <p id="ids-dirty" class="text-xs text-slate-500"></p>
+    </form>
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="font-semibold">Состояние и применение</h2>
+      <p id="ids-state" class="mt-2 text-sm text-slate-600" role="status"></p>
+      <p id="ips-state" class="mt-2 text-sm text-slate-600"></p>
+      <p id="ids-error" class="mt-2 whitespace-pre-wrap break-words text-sm text-red-700" role="alert"></p>
+      <div class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="grid gap-1 text-sm">Срок подтверждения, сек.
+          <input id="ids-timeout" type="number" min="30" max="600" value="120" class="w-28 rounded border p-2">
+        </label>
+        <button id="ids-apply" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Применить сохранённое</button>
+      </div>
+      <pre id="ids-preview" hidden class="mt-4 whitespace-pre-wrap break-words rounded-lg bg-slate-100 p-3 text-sm"></pre>
+      <div id="ids-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3">
+        <p id="ids-pending-text" class="text-sm"></p>
+        <div id="ids-pending-controls" class="mt-3 flex gap-2">
+          <button id="ids-confirm" class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Подтвердить</button>
+          <button id="ids-rollback" class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Вернуть прежние настройки</button>
+        </div>
+      </div>
+      <button id="ids-logs" class="mt-4 rounded-lg border px-3 py-2 text-sm">Журнал движка</button>
+      <pre id="ids-log-output" hidden class="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-xs text-slate-100"></pre>
+    </section>
+  </div>
+  <section class="mt-5 grid gap-4 rounded-xl border border-slate-200 bg-white p-5">
+    <div>
+      <h2 class="font-semibold">Проверка файлов по IOC</h2>
+      <p class="mt-2 text-sm text-slate-600">Выберите файл до 16 МиБ для сверки со снимком Security Feed.</p>
+    </div>
+    <form id="ioc-file-form" class="flex flex-wrap items-end gap-3">
+      <label class="grid gap-1 text-sm">Файл<input id="ioc-file" type="file" required class="rounded border p-2"></label>
+      <button id="ioc-file-check" class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Проверить файл</button>
+    </form>
+    <pre id="ioc-file-result" hidden class="whitespace-pre-wrap break-words text-sm" role="status"></pre>
+    <div class="border-t pt-4">
+      <h3 class="font-medium">Алерты по файлам в HTTP-трафике</h3>
+      <p id="ioc-file-pin" class="mt-2 break-all text-sm text-slate-600"></p>
+      <p class="mt-2 text-sm text-slate-600">Загрузите снимок в черновик, затем проверьте, примените и подтвердите настройки Suricata.</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button id="ioc-file-stage" class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Добавить снимок Security Feed</button>
+        <button id="ioc-file-disable" class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Убрать снимок из черновика</button>
+      </div>
+    </div>
+  </section>
+  <section class="mt-5 rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="font-semibold">Алерты Suricata</h2>
+      <button id="ids-alert-refresh" class="rounded-lg border px-3 py-2 text-sm">Обновить алерты</button>
+    </div>
+    <p id="ids-alert-status" class="mt-2 text-sm text-slate-600" role="status"></p>
+    <ul id="ids-alerts" class="mt-2 divide-y divide-slate-200"></ul>
+    <button id="ids-alert-more" hidden class="mt-3 rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Показать более ранние</button>
+  </section>
+</section>
+
+<section id="page-feed" class="page" hidden>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <form id="feed-settings" class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="font-semibold">Доступ к подписке</h2>
+      <p class="mt-2 text-sm text-slate-600"><a id="feed-origin" class="text-teal-800 underline" href="https://feed.kislovs.ru" target="_blank" rel="noopener noreferrer">feed.kislovs.ru</a> · <span id="feed-key-status">Загрузка…</span></p>
+      <label class="mt-4 block text-sm">API-ключ<input id="feed-key" type="password" autocomplete="new-password" maxlength="512" class="mt-1 block w-full rounded border p-2"></label>
+      <label class="mt-3 block text-sm">Интервал обновления, ч<input id="feed-hours" type="number" min="0" max="168" value="0" class="mt-1 block w-24 rounded border p-2"></label>
+      <p class="mt-1 text-xs text-slate-500">0 — только вручную.</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button id="feed-save" class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Сохранить</button>
+        <button id="feed-check" type="button" disabled class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Проверить ключ</button>
+        <button id="feed-remove" type="button" disabled class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Удалить ключ</button>
+      </div>
+    </form>
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="font-semibold">Полученные данные</h2>
+      <p id="feed-status" class="mt-2 text-sm text-slate-600" role="status"></p>
+      <p id="feed-error" class="mt-2 text-sm text-red-700" role="alert"></p>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <button id="feed-refresh" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Загрузить данные</button>
+        <label class="flex items-center gap-2 text-xs text-slate-600"><input id="feed-allow-shrink" type="checkbox">Принять сокращённый набор</label>
+      </div>
+      <ul id="feed-files" class="mt-3 divide-y divide-slate-200"></ul>
+    </section>
+  </div>
+  <h2 class="mt-6 mb-3 text-lg font-semibold">Использование в правилах</h2>
+  <p class="mb-4 text-sm text-slate-600">Добавьте полученный снимок в черновик, затем проверьте, примените и подтвердите настройки в нужном разделе.</p>
+  <div class="grid gap-5 xl:grid-cols-2">
+    <form id="feed-consumer-firewall" class="rounded-xl border border-slate-200 bg-white p-5">
+      <h3 class="font-semibold">Межсетевой экран</h3>
+      <p class="mt-2 text-sm text-slate-600">Проверяет IP-адреса источника и назначения для транзитного трафика.</p>
+      <p id="feed-firewall-draft" class="mt-2 break-all text-xs text-slate-600"></p>
+      <p id="feed-firewall-confirmed" class="mt-1 break-all text-xs text-slate-600"></p>
+      <label class="mt-3 block text-sm">Исключения, по одному на строку<textarea id="feed-firewall-exceptions" rows="3" placeholder="203.0.113.10/32" class="mt-1 block w-full rounded border p-2"></textarea></label>
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <button id="feed-firewall-stage" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Добавить снимок в черновик</button>
+        <button id="feed-firewall-disable" type="button" disabled class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Убрать из черновика</button>
+        <a href="#firewall" class="px-2 py-2 text-sm text-teal-800 underline">Перейти к применению</a>
+      </div>
+    </form>
+    <form id="feed-consumer-dns" class="rounded-xl border border-slate-200 bg-white p-5">
+      <h3 class="font-semibold">DNS</h3>
+      <p class="mt-2 text-sm text-slate-600">Блокирует домены и их поддомены для клиентов встроенного DNS.</p>
+      <p id="feed-dns-draft" class="mt-2 break-all text-xs text-slate-600"></p>
+      <p id="feed-dns-confirmed" class="mt-1 break-all text-xs text-slate-600"></p>
+      <label class="mt-3 block text-sm">Исключения, по одному на строку<textarea id="feed-dns-exceptions" rows="3" placeholder="allowed.example.org" class="mt-1 block w-full rounded border p-2"></textarea></label>
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <button id="feed-dns-stage" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Добавить снимок в черновик</button>
+        <button id="feed-dns-disable" type="button" disabled class="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Убрать из черновика</button>
+        <a href="#services" class="px-2 py-2 text-sm text-teal-800 underline">Перейти к применению</a>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section id="page-ipsec" class="page" hidden>
+  <div class="grid gap-5 xl:grid-cols-[1fr_1fr]">
+    <div class="rounded-xl border bg-white p-5">
+      <h2 class="font-semibold">Туннели IPsec</h2>
+      <p id="ipsec-status" class="mt-2 text-sm text-slate-600" role="status"></p>
+      <p id="ipsec-crl" class="mt-1 text-sm text-slate-600"></p>
+      <div id="ipsec-tunnels" class="mt-4 grid gap-3"></div>
+      <div class="mt-4 flex flex-wrap items-end gap-3">
+        <button id="ipsec-plan" class="rounded-lg border px-3 py-2 text-sm">Проверить план</button>
+        <label class="text-sm">Срок подтверждения, с
+          <input id="ipsec-timeout" class="ml-2 w-20 rounded border p-2" type="number" min="30" max="600" value="120">
+        </label>
+        <button id="ipsec-apply" disabled class="rounded-lg bg-teal-700 px-3 py-2 text-sm text-white disabled:opacity-50">Применить</button>
+      </div>
+      <pre id="ipsec-preview" hidden class="mt-4 whitespace-pre-wrap rounded-lg bg-slate-100 p-3 text-sm"></pre>
+      <div id="ipsec-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3">
+        <p id="ipsec-pending-text" class="text-sm"></p>
+        <div class="mt-2 flex gap-2">
+          <button id="ipsec-confirm" class="rounded border px-3 py-2 text-sm">Подтвердить</button>
+          <button id="ipsec-rollback" class="rounded border px-3 py-2 text-sm">Откатить</button>
+        </div>
+      </div>
+      <button id="ipsec-logs" class="mt-4 rounded-lg border px-3 py-2 text-sm">Обновить журнал IKE</button>
+      <pre id="ipsec-log-output" hidden class="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-xs text-slate-100"></pre>
+    </div>
+    <form id="ipsec-form" class="grid content-start gap-3 rounded-xl border bg-white p-5">
+      <h2 class="font-semibold">Настройка туннеля</h2>
+      <input type="hidden" name="id">
+      <label>Режим<select name="access_mode"><option value="site">Между шлюзами</option><option value="user">Удалённый доступ IKEv2</option></select></label>
+      <div id="ipsec-user-auth" hidden class="grid gap-3">
+        <label>Публичное имя шлюза<input name="public_endpoint" placeholder="vpn.example.org"></label>
+        <label>Источник пароля<select name="auth_password"><option value="">Без пароля</option><option value="local">Локальная база</option><option value="ldap">LDAP</option><option value="either">Локальная база или LDAP</option><option value="radius">RADIUS</option></select></label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="auth_certificate" checked>Клиентский сертификат</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="auth_totp">Одноразовый код (TOTP)</label>
+        <label>Владелец клиентского сертификата<input name="client_user" maxlength="63"></label>
+      </div>
+      <label class="grid gap-1 text-sm">Название<input name="name" maxlength="100" required class="rounded border p-2"></label>
+      <label class="grid gap-1 text-sm">XFRM-интерфейс<input name="interface" maxlength="15" placeholder="ipsec0" required class="rounded border p-2"></label>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="grid gap-1 text-sm">IPv4 этого шлюза<input name="local_address" placeholder="198.51.100.1" required class="rounded border p-2"></label>
+        <label class="grid gap-1 text-sm">IPv4 удалённого шлюза<input name="remote_address" placeholder="198.51.100.2" required class="rounded border p-2"></label>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="grid gap-1 text-sm">Локальные подсети<textarea name="local_networks" rows="2" placeholder="192.168.10.0/24" required class="rounded border p-2"></textarea></label>
+        <label class="grid gap-1 text-sm"><span id="ipsec-remote-label">Удалённые подсети</span><textarea name="remote_networks" rows="2" placeholder="192.168.20.0/24" required class="rounded border p-2"></textarea></label>
+      </div>
+      <label class="grid gap-1 text-sm">Сертификат этого шлюза<select name="certificate_id" required class="rounded border p-2"></select></label>
+      <label class="grid gap-1 text-sm"><span id="ipsec-peer-label">Сертификат удалённого шлюза</span><select name="peer_certificate_id" required class="rounded border p-2"></select></label>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" checked>Включён</label>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="initiate" checked>Инициировать соединение</label>
+      <div class="flex flex-wrap gap-2">
+        <button class="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white">Сохранить черновик</button>
+        <button id="ipsec-reset" type="button" class="rounded-lg border px-3 py-2 text-sm">Очистить форму</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section id="page-openvpn" class="page" hidden>
+ <div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">OpenVPN · сервер и клиент на устройстве</h2><p class="mt-2 text-sm leading-6 text-slate-500">IPv4 TUN, сертификаты локального CA, UDP/TCP. Для сервера назначьте каждому клиенту постоянный адрес. Для клиента укажите адрес, зарезервированный на удалённом сервере; удалённые маршруты и DNS игнорируются. Правила доступа к VPN задаются в разделе межсетевого экрана. LAN защищён от изменения интерфейса и пересечения маршрутов.</p><p id="ovpn-runtime-status" class="mt-3 text-sm"></p><p id="ovpn-runtime-crl-status" class="mt-2 text-sm text-slate-500"></p><p id="ovpn-runtime-dirty" class="mt-2 text-sm text-amber-800">Применяется только сохранённая конфигурация.</p><div class="mt-4 flex flex-wrap items-center gap-4"><label>Срок подтверждения, сек.<input id="ovpn-runtime-timeout" type="number" min="30" max="600" value="120"></label><button id="ovpn-runtime-plan" class="text-sm text-teal-800">Проверить план OpenVPN</button><button id="ovpn-runtime-apply" class="rounded-lg bg-teal-800 px-4 py-2 text-sm text-white">Применить OpenVPN</button><button id="ovpn-crl-sync" class="text-sm text-teal-800">Доставить CRL сейчас</button></div><div id="ovpn-runtime-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4"><p id="ovpn-runtime-pending-label"></p><p id="ovpn-runtime-timer" class="mt-2 text-sm"></p><div class="mt-3 flex gap-4"><button id="ovpn-runtime-confirm" class="text-sm text-teal-800">Подтвердить OpenVPN</button><button id="ovpn-runtime-rollback" class="text-sm text-red-700">Вернуть предыдущие настройки</button></div></div><pre id="ovpn-runtime-preview" hidden class="mt-4 whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-xs leading-6 text-slate-200"></pre><div id="ovpn-runtime-instances" class="mt-4 divide-y divide-slate-100"></div><pre id="ovpn-runtime-logs" hidden class="mt-4 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-slate-950 p-4 text-xs leading-6 text-slate-200"></pre></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Добавить или изменить экземпляр</h2><form id="ovpn-runtime-form" class="mt-4 grid gap-4 sm:grid-cols-2"><input name="id" type="hidden"><label>Название экземпляра<input name="name" required maxlength="100"></label><label>Режим<select name="mode"><option value="server">Сервер</option><option value="client">Клиент</option></select></label><label>Имя TUN-интерфейса<input name="interface" required maxlength="15" placeholder="ovpn0"></label><label>IPv4-адрес TUN с маской<input name="address" required placeholder="10.80.0.1/24"></label><label>Сертификат этого экземпляра<select name="certificate_id" required></select></label><label>Порт сервера<input name="port" type="number" min="1" max="65535" required value="1194"></label><label>Протокол<select name="protocol"><option value="udp">UDP</option><option value="tcp">TCP</option></select></label><label class="flex items-center gap-3"><input name="enabled" type="checkbox" checked class="size-4 w-4">Экземпляр включён</label><div id="ovpn-runtime-server" class="grid gap-4 sm:col-span-2 sm:grid-cols-2"><label>Локальный bind-адрес сервера<input name="bind_address" placeholder="192.0.2.1"></label><p class="text-xs leading-6 text-slate-500">Bind должен быть назначен включённому интерфейсу. Доступ разрешён только явно выбранным клиентским сертификатам этого CA; CRL проверяется при подключении.</p><label>Источник пароля<select name="auth_password"><option value="">Без пароля</option><option value="local">Локальная база</option><option value="ldap">LDAP</option><option value="either">Локальная база или LDAP</option><option value="radius">RADIUS</option></select></label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="auth_certificate" checked>Клиентский сертификат</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="auth_totp">Одноразовый код (TOTP)</label><label>Публичный адрес OpenVPN<input name="public_endpoint" placeholder="vpn.example.org"></label>
+          <label>Маршруты для личных профилей<textarea name="client_routes" rows="2" placeholder="192.168.10.0/24"></textarea></label>
+          <label>Логин клиента<input name="add_client_username" maxlength="63"></label>
+          <label>Добавить клиентский сертификат<select name="add_client_certificate"></select></label><label>Постоянный IPv4 клиента в VPN<input name="add_client_address" placeholder="10.80.0.2"></label><button id="ovpn-runtime-add-client" type="button" class="text-left text-sm text-teal-800">Добавить допуск клиента</button><div id="ovpn-runtime-clients" class="sm:col-span-2"></div></div><div id="ovpn-runtime-client" hidden class="grid gap-4 sm:col-span-2 sm:grid-cols-2"><label>Числовой IPv4 удалённого сервера<input name="remote" placeholder="198.51.100.10"></label><label>Сертификат удалённого сервера<select name="server_certificate_id"></select></label><label class="sm:col-span-2">IPv4-маршруты через VPN<textarea name="routes" rows="3" placeholder="10.90.0.0/24"></textarea></label></div><div class="flex flex-wrap gap-4 sm:col-span-2"><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить экземпляр в черновик</button><button id="ovpn-runtime-reset" type="button" class="text-sm text-slate-500">Очистить форму экземпляра</button></div></form></div>
+
+ <div class="rounded-xl border border-amber-300 bg-amber-50 p-5"><h2 class="font-semibold">Подготовка клиентских профилей OpenVPN</h2><p class="mt-2 text-sm leading-6">Клиентские файлы .ovpn выдаются отдельно от управления экземплярами выше. Сохранение профиля не применяет настройки сети.</p><p class="mt-2 text-sm leading-6">Нужен OpenVPN 2.6+. Сервер закреплён по SHA256 конкретного сертификата. После его замены потребуется новый профиль. Маршруты и DNS от удалённого сервера игнорируются. DNS из профиля применяется, если его поддерживает клиентская программа.</p></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><div class="flex flex-wrap items-center justify-between gap-3"><h2 class="text-lg font-semibold">Клиентские подключения</h2><button id="ovpn-refresh" type="button" class="text-sm text-teal-800">Обновить профили и сертификаты</button></div><p id="ovpn-revision" class="mt-2 text-xs text-slate-500"></p><label class="mt-4 flex items-center gap-3 text-sm"><input id="ovpn-secret-consent" type="checkbox" class="size-4 w-4">Понимаю, что скачанный .ovpn содержит закрытый ключ клиента</label><div id="ovpn-profiles" class="mt-4 divide-y divide-slate-100"></div><p class="mt-3 text-xs leading-6 text-slate-500">Удаление профиля не отзывает сертификат. Отзыв в CA запрещает новые экспорты; для отключения уже выданного клиента обновите CRL на OpenVPN-сервере и завершите его сеанс. Для управляемых экземпляров CRL доставляется автоматически с перезапуском сеансов. Внешние серверы требуют ручного обновления.</p></div>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Добавить или изменить профиль</h2><p class="mt-2 text-sm text-slate-500">Выберите сертификаты server и client одного локального CA. Выпустить их можно в разделе «CA / ACME».</p><form id="ovpn-form" class="mt-4 grid gap-4 sm:grid-cols-2"><input name="id" type="hidden"><label>Название подключения<input name="name" required maxlength="100" placeholder="Офис"></label><label>Адрес OpenVPN-сервера<input name="remote" required maxlength="253" placeholder="vpn.example.org или 198.51.100.10"></label><label>Порт сервера<input name="port" required type="number" min="1" max="65535" value="1194"></label><label>Транспорт<select name="protocol"><option value="udp">UDP</option><option value="tcp">TCP</option></select></label><label>Сертификат сервера<select name="server_certificate_id" required></select></label><label>Сертификат клиента<select name="client_certificate_id" required></select></label><label>IPv4-подсети через VPN<textarea name="routes" rows="3" placeholder="10.50.0.0/24"></textarea></label><label>DNS клиента, необязательно<input name="dns" placeholder="10.50.0.1"></label><p class="text-xs leading-6 text-slate-500 sm:col-span-2">Подсети указываются в каноническом формате. Маршрут по умолчанию в этой версии не поддерживается. Допускаются только структурированные параметры; загрузка произвольных директив и скриптов отключена.</p><div class="flex flex-wrap gap-4 sm:col-span-2"><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Сохранить профиль</button><button id="ovpn-check" type="button" class="text-sm text-teal-800">Проверить сертификаты и параметры</button><button id="ovpn-reset" type="button" class="text-sm text-slate-500">Очистить форму</button></div></form><pre id="ovpn-preview" hidden class="mt-4 whitespace-pre-wrap break-all rounded-lg bg-slate-950 p-4 text-xs leading-6 text-slate-200"></pre></div>
+</section>
+
+<section id="page-pki" class="page" hidden>
+ <div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Сертификаты и центры сертификации</h2><p class="mt-2 text-sm leading-6 text-slate-500">Локальный CA, сертификаты сервера/клиента, импорт PEM и ACME. Закрытые ключи зашифрованы ключом устройства. Явный экспорт профиля VPN включает ключ клиента; ключи CA и сервера не экспортируются. Корневой CA необходимо отдельно добавить в доверенные хранилища клиентов.</p><p id="pki-status" class="mt-3 text-sm"></p><div id="pki-tls-pending" hidden class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4"><p id="pki-tls-timer"></p><div class="mt-3 flex gap-4"><button id="pki-tls-confirm" class="text-sm text-teal-800">Подтвердить сертификат панели</button><button id="pki-tls-rollback" class="text-sm text-red-700">Вернуть предыдущий сертификат</button></div></div><div id="pki-certificates" class="mt-4 divide-y divide-slate-100"></div></div>
+ <div class="mt-6 grid gap-6 xl:grid-cols-2"><div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Создать локальный CA</h2><form id="pki-ca-form" class="mt-4 grid gap-4"><label>Название CA<input name="name" required maxlength="100"></label><label>Common Name CA<input name="common_name" required maxlength="100" placeholder="Office Root CA"></label><label>Срок CA, дней<input name="days" type="number" min="1" max="3650" value="3650" required></label><p class="text-xs text-slate-500">Ключ CA остаётся онлайн на устройстве. Промежуточные CA и офлайн-корень пока не поддерживаются.</p><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Создать CA</button></form></div>
+ <div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">Выпустить сертификат</h2><form id="pki-issue-form" class="mt-4 grid gap-4 sm:grid-cols-2"><label>Название сертификата<input name="name" required maxlength="100"></label><label>Издатель CA<select name="ca_id" required></select></label><label>Common Name сертификата<input name="common_name" required maxlength="100"></label><label>Назначение сертификата<select name="usage"><option value="server">Сервер TLS</option><option value="client">Клиент VPN / TLS</option></select></label><label>DNS SAN<input name="dns_names" placeholder="gateway.home.arpa"></label><label>IP SAN<input name="ips" placeholder="192.168.10.1"></label><label>Срок сертификата, дней<input name="days" type="number" min="1" max="397" value="90" required></label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Выпустить сертификат</button></form></div></div>
+ <details class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><summary class="cursor-pointer text-lg font-semibold">Импорт сертификата и ключа PEM</summary><form id="pki-import-form" class="mt-4 grid gap-4"><label>Название импорта<input name="name" required maxlength="100"></label><label>Сертификат и цепочка PEM<textarea name="certificate_pem" required rows="6" spellcheck="false"></textarea></label><label>Закрытый ключ PEM<textarea name="private_key_pem" required rows="5" spellcheck="false" autocomplete="off"></textarea></label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Импортировать PEM</button></form></details>
+ <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><h2 class="text-lg font-semibold">ACME · выпуск и продление</h2><p class="mt-2 text-sm leading-6 text-slate-500">HTTP-01 требует доступности домена на TCP/80. Режим listener включается администратором через controller.env; firewall настраивается отдельно. Wildcard, DNS-01 и EAB в этой версии не подключены. Профиль неизменяемый: для другого CA, email или SAN создайте новый.</p><p id="pki-http01-status" class="mt-3 text-sm"></p><form id="pki-acme-form" class="mt-4 grid gap-4 sm:grid-cols-2"><label>Название ACME-профиля<input name="name" required maxlength="100"></label><label>Email ACME<input name="email" type="email" required></label><label>ACME directory URL<input name="directory_url" type="url" required value="https://acme-staging-v02.api.letsencrypt.org/directory"></label><label>Домены ACME<input name="domains" required placeholder="gateway.example.org"></label><label>Продлевать заранее, дней<input name="renew_before_days" type="number" min="1" max="60" value="30" required></label><label class="flex items-center gap-3"><input name="auto_renew" type="checkbox" class="size-4 w-4">Автопродление и обновление назначенного TLS панели</label><label class="flex items-center gap-3 sm:col-span-2"><input name="tos_agreed" type="checkbox" required class="size-4 w-4">Принимаю условия выбранного CA и отправку ему email/доменных имён</label><button class="rounded-lg border border-teal-700 px-4 py-2 text-sm text-teal-800">Создать ACME-профиль</button></form><div id="pki-acme-profiles" class="mt-5 divide-y divide-slate-100"></div><h3 class="mt-6 font-medium">Задания ACME</h3><div id="pki-acme-jobs" class="mt-3 space-y-2 text-sm"></div></div>
+ <details class="mt-6 rounded-xl border border-slate-200 bg-white p-5"><summary class="cursor-pointer font-medium">Аудит сертификатов</summary><div id="pki-audit" class="mt-3 space-y-2 text-xs text-slate-500"></div></details>
+</section>
+
+<section id="page-traffic" class="page space-y-5" hidden>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold">Сбор и доставка событий</h2>
+      <button id="traffic-refresh" class="rounded-lg border px-3 py-2 text-sm">Обновить состояние</button>
+    </div>
+    <p id="traffic-status" role="status" class="mt-3 text-sm text-slate-600"></p>
+    <p id="traffic-health-error" role="alert" class="mt-2 text-sm text-red-700"></p>
+    <details class="mt-4 border-t border-slate-200 pt-4">
+      <summary class="cursor-pointer text-sm font-medium">Подключение к ClickHouse</summary>
+      <form id="traffic-config" class="mt-4 grid gap-4 sm:grid-cols-2">
+        <label>Адрес<input name="url" type="url" maxlength="512" placeholder="http://127.0.0.1:8123" spellcheck="false"></label>
+        <label>База данных<input name="database" value="default" maxlength="63" spellcheck="false"></label>
+        <label>Пользователь<input name="user" maxlength="128" autocomplete="off" spellcheck="false"></label>
+        <label>Пароль<input name="password" type="password" maxlength="1024" autocomplete="new-password"></label>
+        <p class="text-xs text-slate-500 sm:col-span-2">Пустой адрес отключает доставку. При сохранении прежнего адреса и пользователя пустой пароль сохраняет действующий пароль.</p>
+        <div class="sm:col-span-2"><button class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white">Сохранить подключение</button></div>
+      </form>
+      <p id="traffic-config-note" role="status" class="mt-3 text-sm text-slate-600"></p>
+    </details>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">Поиск событий</h2>
+    <form id="traffic-search" class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <label>События<select name="kind"><option value="">Все</option><option value="flow">Соединения</option><option value="rule">Срабатывания правил</option></select></label>
+      <label>Период<select name="hours"><option value="1">Последний час</option><option value="24" selected>Последние сутки</option><option value="168">Последняя неделя</option><option value="720">Последние 30 дней</option><option value="2160">Последние 90 дней</option></select></label>
+      <label>IP или CIDR<input name="ip" maxlength="80" placeholder="192.0.2.0/24" spellcheck="false"></label>
+      <label>Порт<input name="port" type="number" min="1" max="65535"></label>
+      <label>Протокол<select name="proto"><option value="">Любой</option><option value="6">TCP</option><option value="17">UDP</option><option value="1">ICMP</option><option value="58">ICMPv6</option><option value="50">ESP</option><option value="132">SCTP</option></select></label>
+      <label>Действие<select name="action"><option value="">Любое</option><option value="accept">Разрешить</option><option value="drop">Отбросить</option><option value="reject">Отклонить</option></select></label>
+      <label>ID правила<input name="rule" maxlength="128" spellcheck="false"></label>
+      <label>ID соединения<input name="flow_id" maxlength="128" spellcheck="false"></label>
+      <label>Устройство<input name="device" maxlength="128" spellcheck="false"></label>
+      <div class="flex items-end gap-3 sm:col-span-2"><button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white">Найти</button><button type="reset" class="rounded-lg border px-4 py-2 text-sm">Сбросить</button></div>
+    </form>
+    <p id="traffic-results-note" role="status" class="mt-4 text-sm text-slate-600">Задайте фильтры и нажмите «Найти».</p>
+    <div id="traffic-results" class="mt-3 overflow-x-auto" hidden>
+      <table class="w-full text-left text-sm">
+        <thead class="border-b bg-slate-50 text-xs text-slate-600"><tr><th scope="col" class="p-3">Время и устройство</th><th scope="col" class="p-3">Событие</th><th scope="col" class="p-3">Адреса и порты</th><th scope="col" class="p-3">Правило / соединение</th><th scope="col" class="p-3">Пакеты и байты</th></tr></thead>
+        <tbody id="traffic-rows" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<section id="page-capture" class="page space-y-5" hidden>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">Новый захват</h2>
+    <p id="capture-health" role="status" class="mt-2 text-sm text-slate-600">Проверяем подключение к агенту…</p>
+    <form id="capture-form" class="mt-4">
+      <fieldset id="capture-fields" disabled class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <label>Интерфейс<select name="interface" required><option value="">Выберите интерфейс</option></select></label>
+        <label>Направление<select name="direction"><option value="inout">Входящие и исходящие</option><option value="in">Входящие</option><option value="out">Исходящие</option></select></label>
+        <label>Способ захвата<select name="backend"><option value="auto">Автоматически</option><option value="xdp">XDP в драйвере</option><option value="xdp-generic">XDP generic</option><option value="packet">AF_PACKET</option></select></label>
+        <label>Тип пакета<select name="family"><option value="">Любой</option><option value="ip">IPv4</option><option value="ip6">IPv6</option><option value="arp">ARP</option></select></label>
+        <label>Протокол<select name="protocol"><option value="">Любой</option><option value="tcp">TCP</option><option value="udp">UDP</option><option value="icmp">ICMP</option><option value="icmp6">ICMPv6</option><option value="esp">ESP</option></select></label>
+        <label>IP или CIDR источника<input name="source" maxlength="80" spellcheck="false"></label>
+        <label>IP или CIDR назначения<input name="destination" maxlength="80" spellcheck="false"></label>
+        <label>VLAN ID<input name="vlan" type="number" min="0" max="4094"></label>
+        <label>Порты источника<input name="source_ports" maxlength="192" placeholder="53, 1000-2000"></label>
+        <label>Порты назначения<input name="destination_ports" maxlength="192" placeholder="443, 8443"></label>
+        <label>Длительность, секунд<input name="seconds" type="number" min="1" max="3600" value="30" required></label>
+        <label>Размер файла, МиБ<input name="max_mib" type="number" min="1" max="256" value="32" required></label>
+        <label>Лимит пакетов<input name="max_packets" type="number" min="1" max="10000000" placeholder="До лимита времени или размера"></label>
+        <label>Длина пакета, байт<input name="snaplen" type="number" min="64" max="262144" placeholder="Весь пакет"></label>
+        <label>Хранение, часов<input name="retention_hours" type="number" min="1" max="168" value="24" required></label>
+        <details class="sm:col-span-2 xl:col-span-4 border-t border-slate-200 pt-3">
+          <summary class="cursor-pointer text-sm font-medium">Экспертный фильтр libpcap</summary>
+          <label class="mt-3">Выражение<input name="expert" maxlength="1024" placeholder="tcp and (dst port 443 or dst port 8443)" spellcheck="false"></label>
+          <p class="mt-2 text-xs text-slate-500">Перед вводом выражения очистите поля фильтра по типу, протоколу, адресам, портам и VLAN.</p>
+        </details>
+        <div class="sm:col-span-2 xl:col-span-4"><button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Начать захват</button></div>
+      </fieldset>
+    </form>
+    <p id="capture-note" role="status" class="mt-3 text-sm text-slate-600"></p>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="text-lg font-semibold">Сессии захвата</h2><button id="capture-refresh" class="rounded-lg border px-3 py-2 text-sm">Обновить</button></div>
+    <p id="capture-storage" class="mt-2 text-sm text-slate-500"></p>
+    <div id="capture-sessions" class="mt-3 divide-y divide-slate-100"></div>
+  </div>
+</section>
+<section id="page-xdp" class="page space-y-5" hidden>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold">Профиль WAN</h2>
+      <button id="xdp-refresh" type="button" class="rounded-lg border px-3 py-2 text-sm">Обновить</button>
+    </div>
+    <p id="xdp-status" class="mt-2 text-sm text-slate-600" role="status">Проверяем подключение к агенту…</p>
+    <p id="xdp-runtime-error" class="mt-2 text-sm text-red-700" role="alert"></p>
+    <form id="xdp-form" class="mt-4">
+      <fieldset id="xdp-fields" disabled class="grid gap-4 sm:grid-cols-2">
+        <fieldset class="sm:col-span-2">
+          <legend class="text-sm font-medium">WAN-интерфейсы</legend>
+          <div id="xdp-interfaces" class="mt-2 flex flex-wrap gap-3"></div>
+        </fieldset>
+        <label>Режим XDP<select name="mode"><option value="native">В драйвере</option><option value="generic">Generic</option></select></label>
+        <label>Проверять<select name="match"><option value="source">Адрес источника</option><option value="destination">Адрес назначения</option><option value="both">Оба адреса</option></select></label>
+        <label class="sm:col-span-2">Блокировки IP/CIDR<textarea name="block" rows="4" maxlength="184320" placeholder="Один адрес или сеть на строку" spellcheck="false"></textarea></label>
+        <label class="sm:col-span-2">Снимок feed.kislovs.ru<select name="feed_sha256"><option value="">Без подписки</option></select></label>
+        <label>Исключения из подписки<textarea name="exceptions" rows="3" maxlength="12000" placeholder="Один адрес или сеть на строку" spellcheck="false"></textarea></label>
+        <label>Срок подтверждения, секунд<input name="timeout" type="number" min="30" max="600" value="120" required></label>
+        <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <button id="xdp-apply" type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Применить профиль</button>
+          <button id="xdp-disable" type="button" class="rounded-lg border px-4 py-2 text-sm disabled:opacity-50">Отключить профиль</button>
+        </div>
+      </fieldset>
+    </form>
+    <p id="xdp-note" class="mt-3 text-sm text-slate-600" role="status"></p>
+    <div id="xdp-pending" class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4" hidden>
+      <p id="xdp-deadline" class="text-sm font-medium"></p>
+      <div class="mt-3 flex flex-wrap gap-3">
+        <button id="xdp-confirm" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Подтвердить</button>
+        <button id="xdp-rollback" class="rounded-lg border bg-white px-4 py-2 text-sm disabled:opacity-50">Откатить</button>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">Счётчики с момента загрузки профиля</h2>
+    <p class="mt-2 text-sm text-slate-600">Прошедшие пакеты передаются обычной обработке межсетевого экрана.</p>
+    <p id="xdp-counter-empty" class="mt-3 text-sm text-slate-500">Активных интерфейсов XDP нет.</p>
+    <div id="xdp-counter-table" class="mt-4 overflow-x-auto" hidden>
+      <table class="w-full text-left text-sm">
+        <thead class="border-b bg-slate-50 text-xs text-slate-600"><tr><th scope="col" class="p-3">Интерфейс</th><th scope="col" class="p-3">Прошло через XDP</th><th scope="col" class="p-3">Отброшено по IP/CIDR</th><th scope="col" class="p-3">Отброшено по подписке</th></tr></thead>
+        <tbody id="xdp-counter-rows" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <p id="xdp-last-change" class="mt-3 text-xs text-slate-500"></p>
+  </div>
+</section>
+<section id="page-audit" class="page" hidden><p class="mb-5 text-sm text-slate-500">Последние 100 сохранений конфигурации. Это административный аудит, а не журнал сетевого трафика.</p><div id="audit" class="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100"></div></section>
+        <footer class="mt-12 border-t border-slate-200 pt-5 flex justify-between text-xs text-slate-400"><span>GFW · NGFW на Go</span><span id="gfw-version"></span></footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

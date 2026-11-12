@@ -1,0 +1,6 @@
+{
+  "name": "gfw-ui",
+  "private": true,
+  "scripts": {"build:css": "tailwindcss -i ./web/input.css -o ./internal/web/assets/app.css --minify"},
+  "devDependencies": {"tailwindcss": "4.1.17", "@tailwindcss/cli": "4.1.17"}
+}

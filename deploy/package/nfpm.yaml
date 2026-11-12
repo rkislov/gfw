@@ -1,0 +1,72 @@
+name: gfw
+arch: __GFW_ARCH__
+platform: linux
+version: __GFW_VERSION__
+release: __GFW_RELEASE__
+section: net
+priority: optional
+maintainer: 'Кислов Роман Сергеевич'
+description: |
+  Unified NGFW management for Linux: Go controller, embedded Tailwind UI,
+  nftables agent with rollback, kernel WireGuard, integrated Go DNS/GoDHCP engines, local CA, ACME certificate management and managed OpenVPN, IPsec/IKEv2, Suricata IDS/IPS, FESS and conntrack/NFLOG journals with ClickHouse, XDP and AF_PACKET capture, early XDP filtering on WAN and software flowtable acceleration.
+vendor: 'Кислов Роман Сергеевич'
+license: Apache-2.0
+depends: __GFW_DEPENDENCIES__
+contents:
+  - src: ./deploy/gfw-flow.conf
+    dst: /usr/lib/modules-load.d/gfw-flow.conf
+  - src: ./deploy/gfw-traffic-modules.conf
+    dst: /usr/lib/modules-load.d/gfw-traffic.conf
+  - src: ./deploy/gfw-traffic-sysctl.conf
+    dst: /usr/lib/sysctl.d/55-gfw-traffic.conf
+  - src: ./deploy/gfw-ips.conf
+    dst: /usr/lib/modules-load.d/gfw-ips.conf
+  - src: ./deploy/gfw-ipsec.conf
+    dst: /usr/lib/modules-load.d/gfw-ipsec.conf
+  - src: __GFW_BIN_DIR__/gfwd
+    dst: /usr/sbin/gfwd
+    file_info:
+      mode: 0755
+  - src: __GFW_BIN_DIR__/gfw-agent
+    dst: /usr/sbin/gfw-agent
+    file_info:
+      mode: 0755
+  - src: ./deploy/package/gfw-sysctl
+    dst: /usr/sbin/gfw-sysctl
+    file_info:
+      mode: 0755
+  - src: ./deploy/package/gfw-setup
+    dst: /usr/sbin/gfw-setup
+    file_info:
+      mode: 0755
+  - src: ./deploy/systemd/gfwd.service
+    dst: /usr/lib/systemd/system/gfwd.service
+  - src: __GFW_AGENT_UNIT__
+    dst: /usr/lib/systemd/system/gfw-agent.service
+  - src: ./deploy/agent.env.example
+    dst: /etc/gfw/agent.env.example
+    type: config|noreplace
+  - src: ./deploy/controller.env.example
+    dst: /etc/gfw/controller.env.example
+    type: config|noreplace
+  - src: ./deploy/gfw-routing.conf
+    dst: /usr/share/gfw/gfw-routing.conf
+  - src: ./README.md
+    dst: /usr/share/doc/gfw/README.md
+  - src: ./docs/
+    dst: /usr/share/doc/gfw/
+    type: tree
+  - src: ./LICENSE
+    dst: /usr/share/licenses/gfw/LICENSE
+  - src: ./NOTICE
+    dst: /usr/share/licenses/gfw/NOTICE
+  - src: ./third_party/
+    dst: /usr/share/licenses/gfw/third_party/
+    type: tree
+  - src: __GFW_BIN_DIR__/go-licenses/
+    dst: /usr/share/licenses/gfw/go-dependencies/
+    type: tree
+scripts:
+  postinstall: ./deploy/package/postinstall.sh
+  preremove: ./deploy/package/preremove.sh
+  postremove: ./deploy/package/postremove.sh

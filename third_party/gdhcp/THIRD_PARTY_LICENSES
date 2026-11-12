@@ -1,0 +1,73 @@
+GoDHCP
+Copyright 2026 Кислов Роман Сергеевич
+SPDX-License-Identifier: Apache-2.0 (GoDHCP original code)
+
+Original GoDHCP code is Apache-2.0. Dependencies retain their own copyrights
+and licenses; this notice does not relicense third-party material.
+Full license texts and upstream NOTICE files are in third_party/licenses/.
+Binary packages install that directory below /usr/share/licenses/godhcp/.
+The standalone administrator PDF embeds LICENSE, NOTICE and DejaVu notices.
+
+Go runtime dependencies (Linux amd64 and arm64)
+---------------------------------------------
+Generated with google/go-licenses v2.0.1. Detailed reports, including versioned
+upstream URLs, are third_party/go-licenses-amd64.csv and go-licenses-arm64.csv.
+The classifier reports the primary package license, not every embedded work.
+Supplemental LICENSE*, NOTICE*, AUTHORS* and PATENTS* files have been retained,
+including modernc libc/musl, SQLite and sqlite-vec third-party notices.
+
+github.com/Azure/go-ntlmssp: MIT
+github.com/go-asn1-ber/asn1-ber: MIT
+github.com/go-ldap/ldap/v3: MIT
+github.com/beorn7/perks/quantile: MIT
+github.com/cespare/xxhash/v2: MIT
+github.com/dustin/go-humanize: MIT
+github.com/go-chi/chi/v5: MIT
+github.com/golang-jwt/jwt/v5: MIT
+github.com/google/uuid: BSD-3-Clause
+github.com/jackc/pgpassfile: MIT
+github.com/jackc/pgservicefile: MIT
+github.com/jackc/pgx/v5: MIT
+github.com/jackc/puddle/v2: MIT
+github.com/munnerz/goautoneg: BSD-3-Clause
+github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil: BSD-3-Clause
+github.com/prometheus/client_golang/prometheus: Apache-2.0
+github.com/prometheus/client_model/go: Apache-2.0
+github.com/prometheus/common: Apache-2.0
+github.com/prometheus/procfs: Apache-2.0
+github.com/remyoudompheng/bigfft: BSD-3-Clause
+github.com/vishvananda/netlink: Apache-2.0
+github.com/vishvananda/netns: Apache-2.0
+golang.org/x/crypto: BSD-3-Clause
+golang.org/x/net: BSD-3-Clause
+golang.org/x/sync/semaphore: BSD-3-Clause
+golang.org/x/sys: BSD-3-Clause
+golang.org/x/text: BSD-3-Clause
+google.golang.org/protobuf: BSD-3-Clause
+gopkg.in/yaml.v3: MIT
+modernc.org/libc: BSD-3-Clause
+modernc.org/mathutil: BSD-3-Clause
+modernc.org/memory: BSD-3-Clause
+modernc.org/sqlite: BSD-3-Clause
+
+Additional distributed material
+-------------------------------
+Go standard library/runtime: BSD-3-Clause; licenses/go-standard/.
+Tailwind CSS 4.3.3 generated utilities: MIT; licenses/tailwindcss/LICENSE.
+DejaVu fonts embedded in the PDF: original Bitstream Vera and Arev terms,
+with DejaVu changes in the public domain; licenses/dejavu/LICENSE.
+These paths are relative to third_party/.
+
+Scope of audit
+--------------
+The linked Go package reports contain no GPL/AGPL classifications. Assembly
+files reported by the tool are Go/x packages, xxhash and modernc sources;
+their upstream notices are retained. The automated report is supplemented
+by root-level third-party license files and is not a provenance guarantee.
+
+Tailwind CLI and nFPM are build tools; they are not included in the Go binary.
+Linux, QEMU, systemd, ISC DHCP, Scapy and distribution packages in optional
+Docker/VM test images are external test tools with their own licenses. Those
+images and their operating systems are not relicensed as Apache-2.0.
+The Swagger UI page loads swagger-ui-dist from unpkg at view time; its
+upstream Apache-2.0 package is not vendored in the GoDHCP binary.

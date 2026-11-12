@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@source "../internal/web/assets";
+
+@layer base {
+  button, select { cursor: pointer; }
+  button:disabled { cursor: wait; opacity: .5; }
+  input, select, textarea { border: 1px solid #cbd5e1; border-radius: .5rem; padding: .6rem .75rem; width: 100%; background: white; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #0d9488; outline-offset: 2px; }
+  label { display: block; font-size: .875rem; font-weight: 500; color: #334155; }
+  label > input, label > select, label > textarea { margin-top: .4rem; }
+  [hidden] { display: none !important; }
+}

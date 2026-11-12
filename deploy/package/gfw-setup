@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+if [ "$(id -u)" != 0 ]; then echo 'Run as root' >&2; exit 1; fi
+if [ "$#" != 1 ]; then echo 'Usage: gfw-setup LAN_INTERFACE (e.g. br-lan)' >&2; exit 1; fi
+gfw_lan=$1
+case "$gfw_lan" in ''|lo|*[!a-zA-Z0-9_.:-]*) echo 'Invalid LAN interface' >&2; exit 1;; esac
+[ "${#gfw_lan}" -le 15 ] || exit 1
+ip link show dev "$gfw_lan" >/dev/null
+gfw_ip=$(ip -o -4 addr show dev "$gfw_lan" scope global | awk 'NR==1 {split($4,a,"/");print a[1]}')
+if [ -z "$gfw_ip" ]; then echo 'LAN needs an existing IPv4 address' >&2; exit 1; fi
+if [ -e /etc/gfw/agent.env ]; then
+ echo '/etc/gfw/agent.env already exists; inspect it and start services manually.' >&2
+ exit 1
+fi
+install -d -m 0750 -o root -g gfw /etc/gfw/tls
+umask 0077
+if [ ! -e /etc/gfw/tls/server.key ] && [ ! -e /etc/gfw/tls/server.crt ]; then
+ openssl req -x509 -newkey rsa:3072 -sha256 -nodes -days 365 \
+  -subj /CN=gfw.local -addext "subjectAltName=DNS:gfw.local,IP:$gfw_ip,IP:127.0.0.1" \
+  -keyout /etc/gfw/tls/server.key -out /etc/gfw/tls/server.crt
+fi
+[ -f /etc/gfw/tls/server.key ] && [ -f /etc/gfw/tls/server.crt ]
+chown root:gfw /etc/gfw/tls/server.key /etc/gfw/tls/server.crt
+chmod 0640 /etc/gfw/tls/server.key /etc/gfw/tls/server.crt
+printf 'GFW_LAN_INTERFACE=%s\nGFW_MANAGEMENT_PORT=8443\n' "$gfw_lan" > /etc/gfw/agent.env
+chown root:gfw /etc/gfw/agent.env
+chmod 0640 /etc/gfw/agent.env
+systemctl enable --now gfw-agent.service gfwd.service
+printf 'GFW: https://%s:8443\nAdmin token: /var/lib/gfw/admin.token\nInitial certificate is self-signed; install a trusted certificate before production use.\n' "$gfw_ip"

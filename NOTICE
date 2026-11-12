@@ -1,0 +1,9 @@
+GFW
+Copyright 2026 Кислов Роман Сергеевич
+
+Includes adapted Go DNS, GoDHCP and FESS WAF, routing and ACME/certificate components by Кислов Роман Сергеевич,
+licensed under Apache License, Version 2.0.
+See third_party/engines.json for source snapshots and third_party/ for notices.
+The bundled CSS includes Tailwind CSS, Copyright (c) Tailwind Labs, Inc., under
+the MIT license. Its license is included in third_party/gdhcp/dependencies/licenses/tailwindcss/.
+Linux packages also include licenses and notices for the Go toolchain and linked modules.

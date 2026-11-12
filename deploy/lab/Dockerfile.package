@@ -1,0 +1,4 @@
+ARG GFW_LAB_BASE=gfw-alt-p10-lab:arm64
+FROM ${GFW_LAB_BASE}
+RUN apt-get update && apt-get install -y systemd systemd-analyze shadow-utils openssl openvpn strongswan suricata tcpdump python3-modules-sqlite3 && apt-get clean
+WORKDIR /work

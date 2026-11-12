@@ -1,0 +1,3 @@
+ARG GFW_LAB_BASE=gfw-alt-p10-openvpn-lab:arm64
+FROM ${GFW_LAB_BASE}
+RUN apt-get update && apt-get install -y strongswan && apt-get clean

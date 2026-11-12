@@ -1,0 +1,7 @@
+node_modules
+bin
+data
+dist
+.git
+TECHNICAL_SPEC.md
+**/__pycache__

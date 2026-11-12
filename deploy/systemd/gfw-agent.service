@@ -1,0 +1,35 @@
+[Unit]
+Description=GFW nftables agent and rollback watchdog
+Wants=network-online.target
+After=network-online.target nftables.service systemd-modules-load.service
+Before=gfwd.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+Group=gfw
+UMask=0077
+EnvironmentFile=/etc/gfw/agent.env
+StateDirectory=gfw-agent
+StateDirectoryMode=0700
+RuntimeDirectory=gfw-agent
+RuntimeDirectoryMode=0750
+ExecStart=/usr/sbin/gfw-agent -enable-apply -enable-network -enable-services -enable-wireguard -enable-openvpn -enable-ipsec -enable-ids -enable-traffic -enable-capture -enable-xdp -state-dir /var/lib/gfw-agent -socket /run/gfw-agent/agent.sock -socket-group gfw -nft /usr/sbin/nft -lan-interface ${GFW_LAN_INTERFACE} -management-port ${GFW_MANAGEMENT_PORT}
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=110
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_CHOWN CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_SETUID CAP_SETGID CAP_KILL CAP_SYS_CHROOT CAP_BPF CAP_PERFMON
+LimitMEMLOCK=64M
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_PACKET AF_NETLINK AF_INET AF_INET6
+ReadWritePaths=/var/lib/gfw-agent /run /etc/net/ifaces /proc/sys/net/ipv6/conf /etc/sysctl.d -/proc/sys/net/core/somaxconn -/proc/sys/net/core/netdev_max_backlog -/proc/sys/net/netfilter/nf_conntrack_max
+
+[Install]
+WantedBy=multi-user.target

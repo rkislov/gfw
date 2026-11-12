@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+case "${1:-plan}" in
+    plan|apply|restore)
+        if [ "$#" -le 1 ]; then exec /usr/sbin/gfw-agent sysctl "${1:-plan}"; fi
+        ;;
+esac
+printf '%s\n' 'Использование: gfw-sysctl [plan|apply|restore]' >&2
+exit 2

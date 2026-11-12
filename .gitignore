@@ -1,0 +1,12 @@
+/bin/
+/data/
+/dist/
+/node_modules/
+/TECHNICAL_SPEC.md
+.DS_Store
+*.db
+*.db-shm
+*.db-wal
+*.pcap
+*.pcapng
+__pycache__/
