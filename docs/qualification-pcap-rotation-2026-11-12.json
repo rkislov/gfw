@@ -1,0 +1,445 @@
+{
+  "date": "2026-11-12",
+  "stand": {
+    "os": "ALT Linux p10",
+    "arch": "aarch64",
+    "topology": "QEMU/HVF, veth",
+    "physical_nic": false,
+    "pcap_storage": "ext4 on a virtio-blk virtual disk"
+  },
+  "workload": {
+    "target_pps": 100000,
+    "seconds": 320,
+    "udp_payload_bytes": 512,
+    "frame_bytes": 554,
+    "snaplen": 262144,
+    "segment_limit_mib": 256,
+    "retained_file_limit": 80,
+    "ips_policy": "fail-closed",
+    "signature_match_percent": 5
+  },
+  "trials": [
+    {
+      "buffer_mib": 16,
+      "background_seal": false,
+      "stand": {
+        "category": "stand",
+        "kernel": "5.10.274-std-def-alt1",
+        "suricata": "This is Suricata version 8.0.4 RELEASE",
+        "clickhouse": "25.8.12.129",
+        "cpus": 4,
+        "memory_kib": 4017228,
+        "payload_bytes": 512
+      },
+      "traffic": {
+        "category": "nfq_long",
+        "sent": 32000000,
+        "bad": 1600000,
+        "elapsed": 319.999992986,
+        "good_received": 30387822,
+        "bad_received": 0,
+        "firewall_seen": 32000000,
+        "traffic_before": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 0,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "traffic_after": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 31991951,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "clickhouse_counts": "destroy\t18926\nnew\t31998\nrule\t8049\nsnapshot\t2039",
+        "udp_before": {
+          "InDatagrams": 0,
+          "NoPorts": 0,
+          "InErrors": 0,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 0,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "udp_after": {
+          "InDatagrams": 30387822,
+          "NoPorts": 0,
+          "InErrors": 12178,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 12178,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "links_before": {
+          "lan0": {
+            "rx_packets": 13,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 14,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 5,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 5,
+            "tx_dropped": 0
+          }
+        },
+        "links_after": {
+          "lan0": {
+            "rx_packets": 32002281,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 2281,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 23,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 30400023,
+            "tx_dropped": 0
+          }
+        },
+        "version": "0.22.4~pcap1",
+        "forwarded": {
+          "clean": 30400000,
+          "attack": 0
+        },
+        "queue_start": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "lan": {
+          "attempted": 324,
+          "passed": 324,
+          "max_ms": 8.907,
+          "errors": []
+        }
+      },
+      "capture": {
+        "category": "pcap_rotation",
+        "boundary_gaps": 0,
+        "boundary_out_of_order": 0,
+        "duplicates": 0,
+        "packets": 31411519,
+        "missing": 588481,
+        "segments": 67,
+        "bytes": 17904567438,
+        "state": "incomplete",
+        "kernel_dropped": 588481,
+        "truncated": 0
+      },
+      "ring": {
+        "category": "pcap_ring",
+        "retained": 2,
+        "evicted": 4,
+        "packets": 10000,
+        "removed": true
+      }
+    },
+    {
+      "buffer_mib": 64,
+      "background_seal": false,
+      "stand": {
+        "category": "stand",
+        "kernel": "5.10.274-std-def-alt1",
+        "suricata": "This is Suricata version 8.0.4 RELEASE",
+        "clickhouse": "25.8.12.129",
+        "cpus": 4,
+        "memory_kib": 4017224,
+        "payload_bytes": 512
+      },
+      "traffic": {
+        "category": "nfq_long",
+        "sent": 32000000,
+        "bad": 1600000,
+        "elapsed": 320.000071694,
+        "good_received": 24433272,
+        "bad_received": 0,
+        "firewall_seen": 32000000,
+        "traffic_before": {
+          "queued": 43,
+          "oldest_ms": 1794463751388,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 0,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "traffic_after": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 31991960,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 219830,
+          "user_dropped": 0
+        },
+        "clickhouse_counts": "destroy\t18541\nnew\t31999\nrule\t8040\nsnapshot\t2042",
+        "udp_before": {
+          "InDatagrams": 0,
+          "NoPorts": 0,
+          "InErrors": 0,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 0,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "udp_after": {
+          "InDatagrams": 24433272,
+          "NoPorts": 5740631,
+          "InErrors": 16619,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 16619,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "links_before": {
+          "lan0": {
+            "rx_packets": 11,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 14,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 6,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 5,
+            "tx_dropped": 0
+          }
+        },
+        "links_after": {
+          "lan0": {
+            "rx_packets": 32002261,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 2311,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 93,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 30190548,
+            "tx_dropped": 0
+          }
+        },
+        "version": "0.22.4~pcap2",
+        "forwarded": {
+          "clean": 30190522,
+          "attack": 0
+        },
+        "queue_start": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "lan": {
+          "attempted": 320,
+          "passed": 320,
+          "max_ms": 191.585,
+          "errors": []
+        }
+      },
+      "capture": {
+        "category": "pcap_rotation",
+        "boundary_gaps": 0,
+        "boundary_out_of_order": 0,
+        "near_boundary_gaps": 676252,
+        "duplicates": 0,
+        "packets": 30910715,
+        "missing": 1089285,
+        "segments": 66,
+        "bytes": 17619109134,
+        "state": "incomplete",
+        "kernel_dropped": 1089285,
+        "truncated": 0
+      },
+      "ring": {
+        "category": "pcap_ring",
+        "retained": 2,
+        "evicted": 4,
+        "packets": 10000,
+        "removed": true
+      }
+    },
+    {
+      "buffer_mib": 16,
+      "background_seal": true,
+      "stand": {
+        "category": "stand",
+        "kernel": "5.10.274-std-def-alt1",
+        "suricata": "This is Suricata version 8.0.4 RELEASE",
+        "clickhouse": "25.8.12.129",
+        "cpus": 4,
+        "memory_kib": 4017228,
+        "payload_bytes": 512
+      },
+      "traffic": {
+        "category": "nfq_long",
+        "sent": 32000000,
+        "bad": 1600000,
+        "elapsed": 319.99997206899997,
+        "good_received": 30396039,
+        "bad_received": 0,
+        "firewall_seen": 32000000,
+        "traffic_before": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 0,
+          "incomplete_snapshots": 0,
+          "rate_limited": 0,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "traffic_after": {
+          "queued": 0,
+          "oldest_ms": 0,
+          "evicted": 0,
+          "lost": 2,
+          "incomplete_snapshots": 2,
+          "rate_limited": 31991951,
+          "conntrack": true,
+          "nflog": true,
+          "nflog_conntrack": false,
+          "accounting": true
+        },
+        "queue": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "clickhouse_counts": "destroy\t18700\nnew\t32000\nrule\t8049\nsnapshot\t2039",
+        "udp_before": {
+          "InDatagrams": 0,
+          "NoPorts": 0,
+          "InErrors": 0,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 0,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "udp_after": {
+          "InDatagrams": 30396039,
+          "NoPorts": 0,
+          "InErrors": 3961,
+          "OutDatagrams": 0,
+          "RcvbufErrors": 3961,
+          "SndbufErrors": 0,
+          "InCsumErrors": 0,
+          "IgnoredMulti": 0
+        },
+        "links_before": {
+          "lan0": {
+            "rx_packets": 13,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 13,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 6,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 6,
+            "tx_dropped": 0
+          }
+        },
+        "links_after": {
+          "lan0": {
+            "rx_packets": 32002281,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 2281,
+            "tx_dropped": 0
+          },
+          "wan0": {
+            "rx_packets": 28,
+            "rx_dropped": 0,
+            "rx_missed_errors": 0,
+            "tx_packets": 30400028,
+            "tx_dropped": 0
+          }
+        },
+        "version": "0.22.4~pcap3",
+        "forwarded": {
+          "clean": 30400000,
+          "attack": 0
+        },
+        "queue_start": {
+          "waiting": 0,
+          "kernel_dropped": 0,
+          "user_dropped": 0
+        },
+        "lan": {
+          "attempted": 324,
+          "passed": 324,
+          "max_ms": 8.057,
+          "errors": []
+        }
+      },
+      "capture": {
+        "category": "pcap_rotation",
+        "boundary_gaps": 0,
+        "boundary_out_of_order": 0,
+        "near_boundary_gaps": 143,
+        "duplicates": 0,
+        "packets": 31994154,
+        "missing": 5846,
+        "segments": 68,
+        "bytes": 18236669412,
+        "state": "incomplete",
+        "kernel_dropped": 5846,
+        "truncated": 0
+      },
+      "ring": {
+        "category": "pcap_ring",
+        "retained": 2,
+        "evicted": 4,
+        "packets": 10000,
+        "removed": true
+      }
+    }
+  ]
+}

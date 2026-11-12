@@ -27,6 +27,7 @@ type Config struct {
 	Seconds          int    `json:"seconds"`
 	MaxPackets       int    `json:"max_packets"`
 	MaxMiB           int    `json:"max_mib"`
+	RotateFiles      int    `json:"rotate_files,omitempty"`
 	RetentionHours   int    `json:"retention_hours"`
 }
 
@@ -53,6 +54,9 @@ func (c Config) Filter() (string, error) {
 		c.MaxMiB < 1 || c.MaxMiB > 256 || c.RetentionHours < 1 || c.RetentionHours > 168 ||
 		c.Snaplen != 0 && (c.Snaplen < 64 || c.Snaplen > FullSnaplen) {
 		return "", errors.New("проверьте ограничения длительности, размера, пакетов, snaplen и срока хранения")
+	}
+	if c.RotateFiles != 0 && (c.RotateFiles < 2 || c.RotateFiles > 256) {
+		return "", errors.New("для ротации укажите от 2 до 256 файлов")
 	}
 	if len(c.Expert) > 1024 || strings.ContainsAny(c.Expert, "\x00\r\n") {
 		return "", errors.New("экспертный фильтр должен быть одной строкой до 1024 байт")

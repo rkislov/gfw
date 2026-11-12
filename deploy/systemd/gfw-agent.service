@@ -10,12 +10,13 @@ Type=simple
 User=root
 Group=gfw
 UMask=0077
+Environment=GFW_CAPTURE_QUOTA_MIB=512
 EnvironmentFile=/etc/gfw/agent.env
 StateDirectory=gfw-agent
 StateDirectoryMode=0700
 RuntimeDirectory=gfw-agent
 RuntimeDirectoryMode=0750
-ExecStart=/usr/sbin/gfw-agent -enable-apply -enable-network -enable-services -enable-wireguard -enable-openvpn -enable-ipsec -enable-ids -enable-traffic -enable-capture -enable-xdp -state-dir /var/lib/gfw-agent -socket /run/gfw-agent/agent.sock -socket-group gfw -nft /usr/sbin/nft -lan-interface ${GFW_LAN_INTERFACE} -management-port ${GFW_MANAGEMENT_PORT}
+ExecStart=/usr/sbin/gfw-agent -enable-apply -enable-network -enable-services -enable-wireguard -enable-openvpn -enable-ipsec -enable-ids -enable-traffic -enable-capture -capture-quota-mib ${GFW_CAPTURE_QUOTA_MIB} -enable-xdp -state-dir /var/lib/gfw-agent -socket /run/gfw-agent/agent.sock -socket-group gfw -nft /usr/sbin/nft -lan-interface ${GFW_LAN_INTERFACE} -management-port ${GFW_MANAGEMENT_PORT}
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=110

@@ -26,4 +26,4 @@ printf 'GFW_LAN_INTERFACE=%s\nGFW_MANAGEMENT_PORT=8443\n' "$gfw_lan" > /etc/gfw/
 chown root:gfw /etc/gfw/agent.env
 chmod 0640 /etc/gfw/agent.env
 systemctl enable --now gfw-agent.service gfwd.service
-printf 'GFW: https://%s:8443\nAdmin token: /var/lib/gfw/admin.token\nInitial certificate is self-signed; install a trusted certificate before production use.\n' "$gfw_ip"
+printf 'GFW: https://%s:8443\nNew installation login: admin / admin. Change the default password after signing in.\nEmergency admin token: /var/lib/gfw/admin.token\nInitial certificate is self-signed; install a trusted certificate before production use.\n' "$gfw_ip"

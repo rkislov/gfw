@@ -314,7 +314,13 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 	}
 	u := requestIdentity(r)
-	respond(w, 200, map[string]any{"user": u.Name, "role": u.Role, "personal": u.Revision != 0, "csrf": csrf})
+	defaultPassword := u.DefaultPassword
+	if u.Revision == 0 && u.Role == "admin" && s.identity != nil {
+		if admin, err := s.identity.User(r.Context(), "admin"); err == nil {
+			defaultPassword = admin.DefaultPassword && !admin.Disabled
+		}
+	}
+	respond(w, 200, map[string]any{"user": u.Name, "role": u.Role, "personal": u.Revision != 0, "csrf": csrf, "default_password": defaultPassword})
 }
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	if c, e := r.Cookie("gfw_session"); e == nil {
@@ -326,7 +332,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	respond(w, 200, map[string]bool{"ok": true})
 }
 
-var version = "0.22.3-dev"
+var version = "0.22.4-dev"
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	snap, err := s.Store.Read(r.Context())

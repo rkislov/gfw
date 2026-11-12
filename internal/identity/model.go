@@ -32,13 +32,14 @@ func (m Method) Validate() error {
 func (m Method) Credentials() bool { return m.Password != "" || m.TOTP }
 
 type User struct {
-	Name     string   `json:"name"`
-	Source   string   `json:"source"`
-	Role     string   `json:"role"`
-	Disabled bool     `json:"disabled"`
-	TOTP     bool     `json:"totp"`
-	Grants   []string `json:"grants"`
-	Revision int64    `json:"revision"`
+	Name            string   `json:"name"`
+	Source          string   `json:"source"`
+	Role            string   `json:"role"`
+	Disabled        bool     `json:"disabled"`
+	TOTP            bool     `json:"totp"`
+	DefaultPassword bool     `json:"default_password,omitempty"`
+	Grants          []string `json:"grants"`
+	Revision        int64    `json:"revision"`
 }
 
 func (u User) HasGrant(grant string) bool {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/rkislov/gfw/internal/agentclient"
@@ -49,6 +50,7 @@ func (s *Server) captureRoutes(api *http.ServeMux) {
 		s.captureAction(w, r, "delete", "")
 	})
 	api.HandleFunc("GET /api/v1/captures/{id}/file", s.captureDownload)
+	api.HandleFunc("GET /api/v1/captures/{id}/files/{number}", s.captureDownload)
 }
 
 func (s *Server) captureAction(w http.ResponseWriter, r *http.Request, action, suffix string) {
@@ -78,10 +80,19 @@ func (s *Server) captureAudit(w http.ResponseWriter, r *http.Request, action, id
 
 func (s *Server) captureDownload(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if !s.captureAudit(w, r, "download", id) {
+	action, path := "download", "/file"
+	if raw := r.PathValue("number"); raw != "" {
+		number, err := strconv.Atoi(raw)
+		if err != nil || number < 1 || strconv.Itoa(number) != raw {
+			fail(w, 404, "сегмент захвата не найден")
+			return
+		}
+		action, path = "download.segment."+raw, "/files/"+raw
+	}
+	if !s.captureAudit(w, r, action, id) {
 		return
 	}
-	upstream, err := agentclient.Open(r.Context(), s.AgentSocket, r.Method, "/v1/captures/"+id+"/file", r.Header)
+	upstream, err := agentclient.Open(r.Context(), s.AgentSocket, r.Method, "/v1/captures/"+id+path, r.Header)
 	if err != nil {
 		fail(w, 503, "захват пакетов недоступен")
 		return

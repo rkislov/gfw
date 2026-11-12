@@ -78,21 +78,53 @@ func Open(dir string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	_, err = db.Exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
-CREATE TABLE IF NOT EXISTS users(name TEXT PRIMARY KEY, source TEXT NOT NULL, role TEXT NOT NULL,
- disabled INTEGER NOT NULL, password BLOB, totp BLOB, pending BLOB, pending_until INTEGER NOT NULL DEFAULT 0,
- last_step INTEGER NOT NULL DEFAULT -1, grants TEXT NOT NULL, revision INTEGER NOT NULL);
-`)
-	if err != nil {
+	if err = initialize(db); err != nil {
 		db.Close()
 		return nil, err
 	}
 	return &Store{db: db, aead: aead, vault: vault, work: make(chan struct{}, 4), attempts: map[string]bucket{}}, nil
 }
 
+func initialize(db *sql.DB) error {
+	if _, err := db.Exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;"); err != nil {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var existing bool
+	if err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name='users')").Scan(&existing); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`
+CREATE TABLE IF NOT EXISTS users(name TEXT PRIMARY KEY, source TEXT NOT NULL, role TEXT NOT NULL,
+ disabled INTEGER NOT NULL, password BLOB, totp BLOB, pending BLOB, pending_until INTEGER NOT NULL DEFAULT 0,
+ last_step INTEGER NOT NULL DEFAULT -1, grants TEXT NOT NULL, revision INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS default_credentials(name TEXT PRIMARY KEY);
+`); err != nil {
+		return err
+	}
+	if !existing {
+		hash, err := bcrypt.GenerateFromPassword([]byte("admin"), 11)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec("INSERT INTO users(name,source,role,disabled,password,grants,revision) VALUES('admin','local','admin',0,?,'[]',1)", hash); err != nil {
+			return err
+		}
+		if _, err = tx.Exec("INSERT INTO default_credentials(name) VALUES('admin')"); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func (s *Store) Close() error { return s.db.Close() }
 
-const selectUser = `SELECT name,source,role,disabled,password,totp,pending,pending_until,last_step,grants,revision FROM users`
+const selectUser = `SELECT name,source,role,disabled,password,totp,pending,pending_until,last_step,grants,revision,
+ EXISTS(SELECT 1 FROM default_credentials WHERE name=users.name) FROM users`
 
 type record struct {
 	User
@@ -104,7 +136,7 @@ type scanner interface{ Scan(...any) error }
 func scan(row scanner) (record, error) {
 	var r record
 	var grants string
-	err := row.Scan(&r.Name, &r.Source, &r.Role, &r.Disabled, &r.password, &r.totp, &r.pending, &r.until, &r.last, &grants, &r.Revision)
+	err := row.Scan(&r.Name, &r.Source, &r.Role, &r.Disabled, &r.password, &r.totp, &r.pending, &r.until, &r.last, &grants, &r.Revision, &r.DefaultPassword)
 	if err != nil {
 		return r, err
 	}
@@ -197,6 +229,11 @@ func (s *Store) Save(ctx context.Context, u User, password string, resetTOTP boo
 	}
 	if err != nil {
 		return User{}, err
+	}
+	if password != "" {
+		if _, err = tx.ExecContext(ctx, "DELETE FROM default_credentials WHERE name=?", u.Name); err != nil {
+			return User{}, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return User{}, err

@@ -15,7 +15,7 @@ function captureNotice(text) {
   $('capture-note').textContent = text;
 }
 
-function captureRow(session) {
+function captureRow(session, expanded) {
   const row = node('div', '', 'py-4');
   const headline = node('div', '', 'flex flex-wrap items-center justify-between gap-3');
   const summary = node('div', '', 'flex flex-wrap items-center gap-3');
@@ -37,13 +37,14 @@ function captureRow(session) {
     }
     const remove = node('button', 'Удалить', buttonClass + ' text-red-700');
     remove.addEventListener('click', () => {
-      if (window.confirm('Удалить файл и запись этой сессии?')) void captureAction(remove, session, 'delete');
+      if (window.confirm('Удалить файлы и запись этой сессии?')) void captureAction(remove, session, 'delete');
     });
     actions.append(remove);
   }
   headline.append(summary, actions);
   row.append(headline);
   const details = [new Date(session.start).toLocaleString('ru-RU'), `Пакеты ${session.packets}`, captureMiB(session.bytes)];
+  if (session.rotated_out) details.push(`Удалено ротацией ${session.rotated_out}`);
   if (session.truncated) details.push(`Усечено ${session.truncated}`);
   if (session.reason) details.push(captureReasons[session.reason] || session.reason);
   if (session.dropped != null) details.push(`Потери ${session.dropped}`);
@@ -57,6 +58,23 @@ function captureRow(session) {
     disclosure.append(node('summary', 'Хранение и контрольная сумма', 'cursor-pointer'),
       node('div', 'Удаление ' + new Date(session.expires).toLocaleString('ru-RU'), 'mt-2'),
       node('div', 'SHA-256 ' + session.sha256, 'break-all font-mono'));
+    row.append(disclosure);
+  }
+  if (session.segments?.length) {
+    const disclosure = node('details', '', 'mt-3 text-xs text-slate-600');
+    disclosure.dataset.captureFiles = session.id;
+    disclosure.open = expanded.has(session.id);
+    disclosure.append(node('summary', `Готовые файлы PCAP · ${session.segments.length}`, 'cursor-pointer font-medium'));
+    const files = node('ul', '', 'mt-2 divide-y divide-slate-100');
+    for (const segment of session.segments) {
+      const item = node('li', '', 'flex flex-wrap items-center gap-x-4 gap-y-1 py-2');
+      const link = node('a', `Скачать файл ${segment.number}`, 'font-medium text-teal-800 hover:underline');
+      link.href = '/api/v1/captures/' + encodeURIComponent(session.id) + '/files/' + segment.number;
+      item.append(link, node('span', `${captureMiB(segment.bytes)} · ${segment.packets} пакетов`),
+        node('code', segment.sha256, 'break-all text-slate-500'));
+      files.append(item);
+    }
+    disclosure.append(files);
     row.append(disclosure);
   }
   return row;
@@ -83,7 +101,9 @@ async function refreshCapture(loadInterfaces = false) {
       control.replaceChildren(new Option('Выберите интерфейс', ''), ...links.filter(link => link.up).map(link => new Option(link.name, link.name)));
       if (links.some(link => link.up && link.name === previous)) control.value = previous;
     }
-    $('capture-sessions').replaceChildren(...state.sessions.map(captureRow));
+    const expanded = new Set([...$('capture-sessions').querySelectorAll('details[data-capture-files][open]')]
+      .map(el => el.dataset.captureFiles));
+    $('capture-sessions').replaceChildren(...state.sessions.map(session => captureRow(session, expanded)));
     if (!state.sessions.length) $('capture-sessions').append(node('p', 'Сессий захвата пока нет.', 'py-4 text-sm text-slate-500'));
   } catch (err) {
     if (captureGeneration !== generation) return;
@@ -101,7 +121,7 @@ async function captureAction(button, session, action) {
     const path = '/captures/' + encodeURIComponent(session.id);
     await api(path + (action === 'stop' ? '/stop' : ''), {method: action === 'stop' ? 'POST' : 'DELETE'});
     if (captureGeneration !== generation) return;
-    captureNotice(action === 'stop' ? 'Останавливаем захват и закрываем файл.' : 'Сессия удалена.');
+    captureNotice(action === 'stop' ? 'Останавливаем захват и закрываем последний файл.' : 'Сессия удалена.');
     await refreshCapture();
   } catch (err) {
     if (captureGeneration === generation) captureNotice(err.message);
@@ -127,7 +147,7 @@ captureForm.addEventListener('submit', async event => {
   event.preventDefault();
   const generation = captureGeneration;
   const config = Object.fromEntries(new FormData(captureForm));
-  for (const key of ['seconds', 'max_mib', 'max_packets', 'snaplen', 'retention_hours']) config[key] = Number(config[key] || 0);
+  for (const key of ['seconds', 'max_mib', 'rotate_files', 'max_packets', 'snaplen', 'retention_hours']) config[key] = Number(config[key] || 0);
   config.vlan = config.vlan === '' ? null : Number(config.vlan);
   event.submitter.disabled = true;
   try {

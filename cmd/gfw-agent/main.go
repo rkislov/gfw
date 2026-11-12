@@ -75,6 +75,7 @@ func run() error {
 	xdpEnabled := flag.Bool("enable-xdp", false, "enable WAN XDP filtering")
 	captureEnabled := flag.Bool("enable-capture", false, "enable managed packet capture")
 	captureDir := flag.String("capture-dir", "", "private capture storage; defaults to state-dir/captures")
+	captureQuota := flag.Int("capture-quota-mib", capture.DefaultQuotaMiB, "total capture storage quota in MiB")
 	tcpdump := flag.String("tcpdump", "/usr/bin/tcpdump", "absolute trusted tcpdump executable")
 	trafficEnabled := flag.Bool("enable-traffic", false, "collect conntrack and firewall NFLOG events")
 	stateDir := flag.String("state-dir", "./data/agent-state", "private durable recovery directory")
@@ -219,7 +220,7 @@ func run() error {
 			if *captureDir == "" {
 				*captureDir = filepath.Join(*stateDir, "captures")
 			}
-			captures, e := capture.Open(*captureDir, *tcpdump)
+			captures, e := capture.Open(*captureDir, *tcpdump, *captureQuota)
 			if e != nil {
 				slog.Error("packet capture unavailable", "error", e)
 			} else {

@@ -25,7 +25,9 @@ const titles = {
   audit: ['Аудит изменений', 'История сохранения конфигурации устройства.']
 };
 function node(tag, text, classes = '') { const n = document.createElement(tag); n.textContent = text; n.className = classes; return n; }
-function message(text) { $('message').textContent = text; $('message').hidden = false; }
+function message(text) { $('message-text').textContent = text; $('message').hidden = false; }
+$('dismiss-message').addEventListener('click', () => { $('message').hidden = true; });
+$('dismiss-default-password').addEventListener('click', () => { $('default-password-notice').hidden = true; });
 function markDirty() { dirty = true; editVersion++; if (typeof renderFeedConsumers === "function") renderFeedConsumers(); $('dirty').textContent = 'Есть несохранённые изменения'; $('preview-section').hidden = true; updateApplyButtons(); }
 async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -147,6 +149,7 @@ async function enter() {
   const me = await api('/auth/me');
   csrf = me.csrf;
   currentAccount = me;
+  $('default-password-notice').hidden = !me.default_password;
   $('current-account').textContent = me.user;
   $('platform').textContent = isAdmin() ? 'GFW' : 'Личный кабинет';
   for (const el of document.querySelectorAll('.nav')) el.hidden = el.dataset.page === 'portal' ? !me.personal : !isAdmin();

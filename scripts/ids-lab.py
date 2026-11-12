@@ -17,7 +17,7 @@ def sh(*args):
     return subprocess.run(args, check=True, capture_output=True, text=True).stdout
 
 rpm_arch = os.uname().machine
-sh('rpm', '-Uvh', f'/work/dist/gfw-0.22.3-1.altp10.{rpm_arch}.rpm')
+sh('rpm', '-Uvh', f'/work/dist/gfw-0.22.4-1.altp10.{rpm_arch}.rpm')
 sh('ip', 'link', 'set', 'lo', 'up')
 sh('ip', 'netns', 'add', 'gfw-ids-client')
 sh('ip', 'link', 'add', 'lan0', 'type', 'veth', 'peer', 'name', 'peer0')

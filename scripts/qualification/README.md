@@ -18,6 +18,7 @@ GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py soak
 GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py long
 GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py nfqueue
 GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py nfqueue-long
+GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py pcap-long
 ```
 
 `standard` проверяет всплески conntrack и NFLOG, повторную доставку после недоступности адреса ClickHouse, захват и IPS при 1, 10 и 40 тыс. пакетов/с. `extended` проверяет хвост PCAP, прогон при 100 тыс. пакетов/с, совместную работу модулей и переполнение NFQUEUE. `patched` повторяет AF_PACKET при 40 и 100 тыс. пакетов/с. Для A/B на 0.22.0 режим `immediate` добавляет флаг tcpdump только на время эксперимента. Каждая строка `RESULT` содержит JSON с измерениями.
@@ -31,3 +32,15 @@ GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/load.py nfqueue-long
 Для `nfqueue-long` запустите одну версию GFW на чистой ВМ, затем другую на такой же ВМ. Режим использует штатные nftables и Suricata из пакета. Каждый прогон длится 320 секунд при 100 тыс. пакетов/с с IPS fail-closed, ClickHouse и 12 окнами AF_PACKET по 25 секунд. Счётчики nftables после IPS независимо проверяют прохождение пакетов с тестовой сигнатурой. Из пространства имён LAN скрипт каждую секунду делает авторизованный запрос к панели на HTTPS-порту 8443 с временным самоподписанным сертификатом. Для прогона нужен OpenSSL.
 
 Дополнительный вариант `GFW_QUALIFICATION_NFQ_PAUSES=1` использует 180 секунд нагрузки, семь окон захвата и 11 пауз Suricata по 100 мс через каждые 15 секунд. Применяйте одинаковый вариант к обеим версиям. Сравнивайте его результаты отдельно от прогонов без пауз.
+
+`pcap-long` использует тот же 320-секундный профиль IPS и ClickHouse. Смонтируйте отдельный пустой том с запасом 21 ГиБ в `/capture-store`. Скрипт запускает одну сессию AF_PACKET с полным захватом и ротацией по 256 МиБ. Он проверяет скачивание закрытого PCAP во время сессии, SHA-256 всех файлов и номера пакетов внутри и между файлами. Затем отдельная короткая сессия проверяет вытеснение файлов кольцом.
+
+### Обновление базы пользователей с 0.22.3
+
+В чистом изолированном Linux-контейнере установите системные зависимости GFW. Запустите проверку, указав два настоящих пакета одной платформы и архитектуры. Каталог `/state` должен быть доступен для записи.
+
+```sh
+GFW_QUALIFICATION_LAB=1 python3 scripts/qualification/upgrade-auth.py /packages/gfw-0.22.3.rpm /packages/gfw-0.22.4.rpm
+```
+
+Проверка сравнивает хэши существующих паролей и ключи аварийного доступа до и после обновления, проверяет вход администратора и пользователя, а также смену заводского пароля на чистой базе.

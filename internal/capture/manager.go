@@ -22,7 +22,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const totalQuota = 512 << 20
+const DefaultQuotaMiB = 512
 const maxSessions = 32
 
 var (
@@ -35,24 +35,30 @@ var (
 var idPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
 type Session struct {
-	ID            string     `json:"id"`
-	Config        Config     `json:"config"`
-	Filter        string     `json:"filter"`
-	Backend       string     `json:"backend"`
-	Fallback      string     `json:"fallback,omitempty"`
-	State         string     `json:"state"`
-	Reason        string     `json:"reason,omitempty"`
-	Error         string     `json:"error,omitempty"`
-	Start         time.Time  `json:"start"`
-	End           *time.Time `json:"end,omitempty"`
-	Expires       time.Time  `json:"expires"`
-	Packets       uint64     `json:"packets"`
-	OriginalBytes uint64     `json:"original_bytes"`
-	CapturedBytes uint64     `json:"captured_bytes"`
-	Truncated     uint64     `json:"truncated"`
-	Dropped       *uint64    `json:"dropped,omitempty"`
-	Bytes         int64      `json:"bytes"`
-	SHA256        string     `json:"sha256,omitempty"`
+	ID       string     `json:"id"`
+	Config   Config     `json:"config"`
+	Filter   string     `json:"filter"`
+	Backend  string     `json:"backend"`
+	Fallback string     `json:"fallback,omitempty"`
+	State    string     `json:"state"`
+	Reason   string     `json:"reason,omitempty"`
+	Error    string     `json:"error,omitempty"`
+	Start    time.Time  `json:"start"`
+	End      *time.Time `json:"end,omitempty"`
+	Expires  time.Time  `json:"expires"`
+	captureStats
+	Dropped    *uint64   `json:"dropped,omitempty"`
+	SHA256     string    `json:"sha256,omitempty"`
+	Segments   []Segment `json:"segments,omitempty"`
+	RotatedOut int       `json:"rotated_out,omitempty"`
+}
+
+type captureStats struct {
+	Packets       uint64 `json:"packets"`
+	OriginalBytes uint64 `json:"original_bytes"`
+	CapturedBytes uint64 `json:"captured_bytes"`
+	Truncated     uint64 `json:"truncated"`
+	Bytes         int64  `json:"bytes"`
 }
 
 type Status struct {
@@ -66,6 +72,7 @@ type Manager struct {
 	mu          sync.Mutex
 	db          *sql.DB
 	dir, binary string
+	quota       int64
 	catalog     map[string]Session
 	active      string
 	cancel      func(string)
@@ -74,7 +81,10 @@ type Manager struct {
 	wg          sync.WaitGroup
 }
 
-func Open(dir, binary string) (*Manager, error) {
+func Open(dir, binary string, quotaMiB int) (*Manager, error) {
+	if quotaMiB < DefaultQuotaMiB || quotaMiB > 1048576 {
+		return nil, errors.New("квота захвата должна быть от 512 до 1048576 МиБ")
+	}
 	if err := validateBinary(binary); err != nil {
 		return nil, err
 	}
@@ -90,7 +100,7 @@ func Open(dir, binary string) (*Manager, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	m := &Manager{db: db, dir: dir, binary: binary, catalog: map[string]Session{}, background: make(chan struct{})}
+	m := &Manager{db: db, dir: dir, binary: binary, quota: int64(quotaMiB) << 20, catalog: map[string]Session{}, background: make(chan struct{})}
 	if err = m.load(); err != nil {
 		db.Close()
 		return nil, err
@@ -129,17 +139,27 @@ func (m *Manager) load() error {
 	}
 	rows.Close()
 	for _, s := range m.catalog {
-		if s.State == "running" {
+		interrupted := s.State == "running"
+		if interrupted {
 			s.State, s.Reason = "incomplete", "restart"
 			now := time.Now().UTC()
 			s.End = &now
 			s.Expires = now.Add(time.Duration(s.Config.RetentionHours) * time.Hour)
-			if err := m.publish(&s, true); err != nil {
-				s.Error = err.Error()
-			}
-			if err := m.save(s); err != nil {
-				return err
-			}
+		}
+		if !interrupted && (s.Config.RotateFiles == 0 || s.State != "incomplete") {
+			continue
+		}
+		var recoveryErr error
+		if s.Config.RotateFiles > 0 {
+			recoveryErr = m.recoverRotation(&s)
+		} else {
+			recoveryErr = m.publish(&s, true)
+		}
+		if recoveryErr != nil && s.Error == "" {
+			s.Error = recoveryErr.Error()
+		}
+		if err := m.save(s); err != nil {
+			return err
 		}
 	}
 	entries, err := os.ReadDir(m.dir)
@@ -147,6 +167,12 @@ func (m *Manager) load() error {
 		return err
 	}
 	for _, entry := range entries {
+		if rotatedName.MatchString(entry.Name()) {
+			if err := m.removeOrphanSegment(entry.Name()); err != nil {
+				return err
+			}
+			continue
+		}
 		id, isPart := strings.CutSuffix(entry.Name(), ".part")
 		if !isPart || !idPattern.MatchString(id) {
 			continue
@@ -161,21 +187,26 @@ func (m *Manager) load() error {
 }
 
 func (m *Manager) save(s Session) error {
-	body, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	if _, err = m.db.Exec("INSERT INTO captures(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", s.ID, body); err != nil {
+	if err := m.persist(s); err != nil {
 		return err
 	}
 	m.catalog[s.ID] = s
 	return nil
 }
 
+func (m *Manager) persist(s Session) error {
+	body, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	_, err = m.db.Exec("INSERT INTO captures(id,body) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body", s.ID, body)
+	return err
+}
+
 func (m *Manager) Status() Status {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	out := Status{Enabled: true, Sessions: make([]Session, 0, len(m.catalog)), Quota: totalQuota}
+	out := Status{Enabled: true, Sessions: make([]Session, 0, len(m.catalog)), Quota: m.quota}
 	for _, s := range m.catalog {
 		out.Sessions = append(out.Sessions, s)
 		out.Used += s.Bytes
@@ -205,17 +236,22 @@ func (m *Manager) Start(id string, c Config) (Session, error) {
 		return zero, err
 	}
 	maxBytes := int64(c.MaxMiB) << 20
+	reserved := maxBytes * int64(max(1, c.RotateFiles))
 	used := int64(0)
 	for _, s := range m.catalog {
 		used += s.Bytes
 	}
-	if len(m.catalog) >= maxSessions || used+maxBytes > totalQuota {
+	if len(m.catalog) >= maxSessions || used+reserved > m.quota {
 		return zero, ErrQuota
 	}
-	if err = spaceAvailable(m.dir, maxBytes); err != nil {
+	if err = spaceAvailable(m.dir, reserved); err != nil {
 		return zero, err
 	}
-	file, err := os.OpenFile(m.path(id, ".part"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	path := m.path(id, ".part")
+	if c.RotateFiles > 0 {
+		path = m.segmentPath(id, 1, ".part")
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return zero, err
 	}
@@ -264,9 +300,24 @@ func (m *Manager) Remove(id string) error {
 }
 
 func (m *Manager) remove(id string) error {
-	for _, suffix := range []string{".pcap", ".part"} {
-		if err := os.Remove(m.path(id, suffix)); err != nil && !errors.Is(err, os.ErrNotExist) {
+	for _, segment := range m.catalog[id].Segments {
+		if err := removeCaptureFile(m.segmentPath(id, segment.Number, ".pcap")); err != nil {
 			return err
+		}
+	}
+	for _, suffix := range []string{".pcap", ".part"} {
+		if err := removeCaptureFile(m.path(id, suffix)); err != nil {
+			return err
+		}
+	}
+	if m.catalog[id].Config.RotateFiles > 0 {
+		next := m.catalog[id].nextSegment()
+		for _, number := range []int{next, next + 1} {
+			for _, suffix := range []string{".pcap", ".part"} {
+				if err := removeCaptureFile(m.segmentPath(id, number, suffix)); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	if _, err := m.db.Exec("DELETE FROM captures WHERE id=?", id); err != nil {
@@ -337,15 +388,26 @@ func (m *Manager) run(ctx context.Context, s Session, file *os.File, reader sour
 	defer timer.Stop()
 	watcher := context.AfterFunc(ctx, reader.stop)
 	defer watcher()
-	captureErr := m.write(&s, file, reader, maxBytes)
+	var captureErr error
+	var rotation *rotationWriter
+	if s.Config.RotateFiles > 0 {
+		rotation = &rotationWriter{manager: m, session: &s, file: file}
+		captureErr = rotation.write(reader, maxBytes)
+	} else {
+		captureErr = m.write(&s, file, reader, maxBytes)
+	}
 	dropped, closeErr := reader.close()
 	s.Dropped = dropped
 	captureErr = errors.Join(captureErr, closeErr)
-	if err := file.Sync(); captureErr == nil {
-		captureErr = err
-	}
-	if err := file.Close(); captureErr == nil {
-		captureErr = err
+	if rotation != nil {
+		captureErr = errors.Join(captureErr, rotation.finish(captureErr != nil))
+	} else {
+		if err := file.Sync(); captureErr == nil {
+			captureErr = err
+		}
+		if err := file.Close(); captureErr == nil {
+			captureErr = err
+		}
 	}
 	if cause := context.Cause(ctx); cause != nil && s.Reason == "" {
 		s.Reason = cause.Error()
@@ -360,10 +422,12 @@ func (m *Manager) run(ctx context.Context, s Session, file *os.File, reader sour
 			s.Error = captureErr.Error()
 		}
 	}
-	if err := m.publish(&s, captureErr != nil); err != nil {
-		s.State = "incomplete"
-		if s.Error == "" {
-			s.Error = err.Error()
+	if rotation == nil {
+		if err := m.publish(&s, captureErr != nil); err != nil {
+			s.State = "incomplete"
+			if s.Error == "" {
+				s.Error = err.Error()
+			}
 		}
 	}
 	now := time.Now().UTC()
@@ -434,7 +498,7 @@ func (m *Manager) write(s *Session, file *os.File, reader source, maxBytes int64
 	return buffer.Flush()
 }
 
-func (s *Session) addPacket(original, captured int) {
+func (s *captureStats) addPacket(original, captured int) {
 	s.Packets++
 	s.OriginalBytes += uint64(original)
 	s.CapturedBytes += uint64(captured)
@@ -448,8 +512,8 @@ func (m *Manager) publish(s *Session, recover bool) error {
 	part := m.path(s.ID, ".part")
 	final := m.path(s.ID, ".pcap")
 	if recover {
-		if err := recoverFile(part, s); errors.Is(err, os.ErrNotExist) {
-			if err = recoverFile(final, s); err != nil {
+		if err := recoverFile(part, &s.captureStats); errors.Is(err, os.ErrNotExist) {
+			if err = recoverFile(final, &s.captureStats); err != nil {
 				return err
 			}
 			part = final
@@ -482,20 +546,23 @@ func (m *Manager) publish(s *Session, recover bool) error {
 			return err
 		}
 	}
-	dir, err := os.Open(m.dir)
-	if err != nil {
-		return err
-	}
-	err = dir.Sync()
-	dir.Close()
-	if err != nil {
+	if err = m.syncDir(); err != nil {
 		return err
 	}
 	s.SHA256 = hex.EncodeToString(hash.Sum(nil))
 	return nil
 }
 
-func recoverFile(path string, s *Session) error {
+func (m *Manager) syncDir() error {
+	dir, err := os.Open(m.dir)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	return dir.Sync()
+}
+
+func recoverFile(path string, s *captureStats) error {
 	f, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		return err

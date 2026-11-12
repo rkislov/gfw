@@ -178,6 +178,7 @@ $('identity-grant').addEventListener('change', e => {
 $('identity-user').addEventListener('reset', e => {
   e.currentTarget.elements.name.readOnly = false;
   e.currentTarget.elements.source.disabled = false;
+  e.currentTarget.elements.revision.value = '0';
 });
 
 submitIdentityForm('identity-user', async (form, data) => {
@@ -187,6 +188,10 @@ submitIdentityForm('identity-user', async (form, data) => {
   });
   form.elements.password.value = '';
   form.elements.reset_totp.checked = false;
+  if (currentAccount?.personal && data.name === currentAccount.user) {
+    $('login-error').textContent = 'Учётная запись изменена. Войдите снова.';
+  }
+  if (data.name === 'admin' && data.password) $('default-password-notice').hidden = true;
   message('Учётная запись сохранена.');
   await refreshIdentityUsers();
 });

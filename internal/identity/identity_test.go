@@ -100,3 +100,48 @@ func TestExternalRadiusRequiresAuthenticatedResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDefaultAdminOnlyInitializesNewStores(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin, err := s.Authenticate(ctx, "admin", "admin", "", Method{}, "", true)
+	if err != nil || !admin.DefaultPassword || admin.Role != "admin" {
+		t.Fatalf("unexpected bootstrap result: %+v (%v)", admin, err)
+	}
+	const replacement = "changed password 2026"
+	updated, err := s.Save(ctx, admin, replacement, false)
+	if err != nil || updated.DefaultPassword {
+		t.Fatalf("default flag survived password change: %+v (%v)", updated, err)
+	}
+	if err = s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if _, err = s.Authenticate(ctx, "admin", "admin", "", Method{}, "", true); !errors.Is(err, ErrDenied) {
+		t.Fatalf("default password was accepted after restart: %v", err)
+	}
+	if u, e := s.Authenticate(ctx, "admin", replacement, "", Method{}, "", true); e != nil || u.DefaultPassword {
+		t.Fatalf("replacement password not preserved: %+v (%v)", u, e)
+	}
+
+	// Model a prior installation with the existing users table and no bootstrap metadata.
+	if _, err = s.db.Exec("DELETE FROM users WHERE name='admin'; DROP TABLE default_credentials;"); err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer legacy.Close()
+	if _, err = legacy.Authenticate(ctx, "admin", "admin", "", Method{}, "", true); !errors.Is(err, ErrDenied) {
+		t.Fatalf("upgrade initialized a default administrator: %v", err)
+	}
+}

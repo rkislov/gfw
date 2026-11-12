@@ -6,13 +6,16 @@ import ssl, sys
 if os.environ.get("GFW_QUALIFICATION_LAB") != "1":
     raise SystemExit("Run only inside a fresh isolated Linux lab with GFW_QUALIFICATION_LAB=1.")
 phase = sys.argv[1] if len(sys.argv) == 2 else "standard"
-if phase not in {"standard", "extended", "immediate", "patched", "soak", "long", "nfqueue", "nfqueue-long"} or len(sys.argv) > 2:
-    raise SystemExit("Usage: load.py [standard|extended|immediate|patched|soak|long|nfqueue|nfqueue-long]")
+if phase not in {"standard", "extended", "immediate", "patched", "soak", "long", "nfqueue", "nfqueue-long", "pcap-long"} or len(sys.argv) > 2:
+    raise SystemExit("Usage: load.py [standard|extended|immediate|patched|soak|long|nfqueue|nfqueue-long|pcap-long]")
 if pathlib.Path('/var/lib/gfw/admin.token').exists():
     raise SystemExit("The load lab requires a fresh GFW data directory.")
 state=pathlib.Path('/state')
-nfq_long = phase == "nfqueue-long"
-nfq_pauses = nfq_long and os.environ.get("GFW_QUALIFICATION_NFQ_PAUSES") == "1"
+pcap_long = phase == "pcap-long"
+nfq_long = phase in {"nfqueue-long", "pcap-long"}
+if pcap_long and not pathlib.Path('/capture-store').is_mount():
+    raise SystemExit("Mount a dedicated test volume at /capture-store for pcap-long.")
+nfq_pauses = phase == "nfqueue-long" and os.environ.get("GFW_QUALIFICATION_NFQ_PAUSES") == "1"
 base_url = 'https://127.0.0.1:8443' if nfq_long else 'http://127.0.0.1:8088'
 tls = ssl._create_unverified_context() if nfq_long else None  # Disposable, self-signed VM fixture.
 
@@ -102,7 +105,8 @@ raise SystemExit(subprocess.run(['/usr/sbin/nft',*args],input=raw,text=True).ret
         wrapper.write_text(program)
         wrapper.chmod(0o755)
         nfq_args += ['-' + name, str(wrapper)]
-agent=proc('agent',['/usr/sbin/gfw-agent',*tcpdump_args,*nfq_args,'-enable-apply','-enable-traffic','-enable-capture','-enable-ids','-lan-interface','lan0','-management-port','8443','-state-dir','/var/lib/gfw-agent','-socket','/state/agent.sock'])
+storage_args = ['-capture-dir','/capture-store/pcap','-capture-quota-mib','24576'] if pcap_long else []
+agent=proc('agent',['/usr/sbin/gfw-agent',*tcpdump_args,*nfq_args,*storage_args,'-enable-apply','-enable-traffic','-enable-capture','-enable-ids','-lan-interface','lan0','-management-port','8443','-state-dir','/var/lib/gfw-agent','-socket','/state/agent.sock'])
 panel_args = ['-listen','127.0.0.1:8088']
 if nfq_long:
     cert, key = state/'lab.crt', state/'lab.key'
@@ -512,7 +516,7 @@ print(json.dumps(dict(sent=n,bad=(n+19)//20,elapsed=time.monotonic()-start)))
             emit('nfq_no_listener_closed',**sent,**rx,lan_management_reachable=True)
         finally:
             os.kill(agent.pid,signal.SIGCONT)
-    elif phase in {"soak", "long", "nfqueue-long"}:
+    elif phase in {"soak", "long", "nfqueue-long", "pcap-long"}:
         if phase == "soak":
             def packet_writer():
                 for child in pathlib.Path('/proc').glob('[0-9]*'):
@@ -593,6 +597,12 @@ print(json.dumps(dict(attempted=attempted, passed=passed, max_ms=max_ms, errors=
         udp_before=udp_stats()
         links_before=link_stats()
         seen=counters()
+        if pcap_long:
+            rotation_config={'interface':'lan0','backend':'packet','direction':'in','family':'ip','protocol':'udp',
+                'source':'192.0.2.2','destination':'198.51.100.2','destination_ports':'41001','seconds':325,
+                'snaplen':0,'max_packets':0,'max_mib':256,'rotate_files':80,'retention_hours':1}
+            rotating,_=api('/captures','POST',rotation_config)
+            time.sleep(.4)
         r=receive(41001)
         tx=send(100000,packets,41001,mixed=1,background=True,rotate=pairs)
         if nfq_pauses:
@@ -613,6 +623,24 @@ for second in range(15, 180, 15):
 print(json.dumps({'durations_ms': pauses}))
 '''
             pauses = proc('pauses',['python3','-c',pause_worker,str(sensor_pid())],stdout=subprocess.PIPE,text=True)
+        if pcap_long:
+            checked_live = False
+            while tx.poll() is None:
+                time.sleep(25)
+                progress = capture_state(rotating['id'])
+                assert progress['state']=='running' or tx.poll() is not None,progress
+                if progress.get('segments') and not checked_live:
+                    segment = progress['segments'][0]
+                    path = '/captures/'+rotating['id']+'/files/'+str(segment['number'])
+                    with request(path,headers={'Range':'bytes=0-23'}) as part:
+                        assert part.status==206 and len(part.read())==24
+                        assert part.headers['ETag']=='"'+segment['sha256']+'"'
+                    checked_live = True
+                emit('pcap_rotation_progress',packets=progress['packets'],bytes=progress['bytes'],
+                     sealed=len(progress.get('segments',[])),queue=api('/ids/state')[0]['runtime']['queue'],
+                     traffic=stat())
+            assert checked_live
+            windows = 0
         for window in range(1,windows+1):
             cfg={'interface':'lan0','backend':'packet','direction':'in','family':'ip','protocol':'udp',
                  'source':'192.0.2.2','destination':'198.51.100.2','destination_ports':'41001','seconds':25,
@@ -648,6 +676,62 @@ print(json.dumps({'durations_ms': pauses}))
              queue=queue,clickhouse_counts=db_totals(),udp_before=udp_before,udp_after=udp_stats(),
              links_before=links_before,links_after=link_stats(),**extras)
         assert rx['bad_received']==0
+        if pcap_long:
+            import hashlib, mmap, struct
+            complete=wait(lambda:(x if (x:=capture_state(rotating['id']))['state']!='running' else None),15)
+            assert complete['reason']=='duration' and not complete.get('error'),complete
+            assert complete['backend']=='packet' and complete['truncated']==0 and not complete.get('rotated_out'),complete
+            parts=complete['segments']
+            assert len(parts)>2 and sum(part['bytes'] for part in parts)==complete['bytes'],complete
+            seen_sequences=bytearray(packets)
+            sequence_totals=dict(boundary_gaps=0,boundary_out_of_order=0,
+                                 near_boundary_gaps=0,duplicates=0,packets=0)
+            previous=None
+            for number, part in enumerate(parts,1):
+                assert part['number']==number and part['bytes']<=256*2**20,part
+                filename=pathlib.Path('/capture-store/pcap',rotating['id']+f'.{number}.pcap')
+                with filename.open('rb') as stream, mmap.mmap(stream.fileno(),0,access=mmap.ACCESS_READ) as data:
+                    assert len(data)==part['bytes'] and hashlib.sha256(data).hexdigest()==part['sha256'],part
+                    assert data[:4]==b'\x4d\x3c\xb2\xa1' and struct.unpack_from('<II',data,16)==(262144,1),part
+                    offset,count,first=24,0,None
+                    while offset<len(data):
+                        length,original=struct.unpack_from('<II',data,offset+8)
+                        assert length==original==554 and offset+16+length<=len(data)
+                        number_in_stream=struct.unpack_from('!I',data,offset+16+51)[0]
+                        assert number_in_stream<packets
+                        if first is None:
+                            first=number_in_stream
+                            if previous is not None:
+                                sequence_totals['boundary_gaps']+=max(0,first-previous-1)
+                                sequence_totals['boundary_out_of_order']+=int(first<=previous)
+                        elif number > 1 and count <= 8192 and previous is not None:
+                            sequence_totals['near_boundary_gaps']+=max(0,number_in_stream-previous-1)
+                        previous=number_in_stream
+                        sequence_totals['duplicates']+=seen_sequences[number_in_stream]
+                        seen_sequences[number_in_stream]=1
+                        count+=1
+                        offset+=16+length
+                    assert offset==len(data) and count==part['packets'],part
+                    sequence_totals['packets']+=count
+                if number%10==0:
+                    emit('pcap_verify_progress',files=number,packets=sequence_totals['packets'])
+            assert sequence_totals['packets']==complete['packets']
+            emit('pcap_rotation',**sequence_totals,missing=packets-sum(seen_sequences),
+                 segments=len(parts),bytes=complete['bytes'],state=complete['state'],
+                 kernel_dropped=complete.get('dropped'),truncated=complete['truncated'])
+            ring,_=api('/captures','POST',dict(rotation_config,seconds=8,max_mib=1,rotate_files=2,max_packets=10000))
+            time.sleep(.3)
+            sink=receive(41001)
+            send(20000,11000,41001)
+            result(sink)
+            done=wait(lambda:(x if (x:=capture_state(ring['id']))['state']!='running' else None))
+            assert done['packets']==10000 and done['reason']=='packets',done
+            assert len(done['segments'])==2 and done.get('rotated_out')==4 and done['bytes']<=2**21,done
+            assert [part['number'] for part in done['segments']]==[5,6],done
+            assert not pathlib.Path('/capture-store/pcap',ring['id']+'.1.pcap').exists()
+            api('/captures/'+ring['id'],'DELETE')
+            assert not list(pathlib.Path('/capture-store/pcap').glob(ring['id']+'.*'))
+            emit('pcap_ring',retained=2,evicted=4,packets=10000,removed=True)
     else:
         for rate, repeats in [(40000,3),(100000,3)]:
             for repeat in range(1,repeats+1):

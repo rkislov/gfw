@@ -2,7 +2,11 @@ package agent
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/rkislov/gfw/internal/capture"
 )
@@ -47,13 +51,31 @@ func registerCapture(mux *http.ServeMux, m *Manager) {
 			captureResult(w, nil, err)
 			return
 		}
-		defer file.Close()
-		w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
-		w.Header().Set("Content-Disposition", `attachment; filename="gfw-`+s.ID+`.pcap"`)
-		w.Header().Set("Cache-Control", "private, no-store")
-		w.Header().Set("ETag", `"`+s.SHA256+`"`)
-		http.ServeContent(w, r, "gfw-"+s.ID+".pcap", *s.End, file)
+		servePCAP(w, r, file, "gfw-"+s.ID+".pcap", s.SHA256, *s.End)
 	}))
+	mux.HandleFunc("GET /v1/captures/{id}/files/{number}", withCapture(func(w http.ResponseWriter, r *http.Request, c *capture.Manager) {
+		number, err := strconv.Atoi(r.PathValue("number"))
+		if err != nil || number < 1 || strconv.Itoa(number) != r.PathValue("number") {
+			captureResult(w, nil, capture.ErrMissing)
+			return
+		}
+		id := r.PathValue("id")
+		file, segment, err := c.SegmentFile(id, number)
+		if err != nil {
+			captureResult(w, nil, err)
+			return
+		}
+		servePCAP(w, r, file, fmt.Sprintf("gfw-%s-%06d.pcap", id, number), segment.SHA256, segment.End)
+	}))
+}
+
+func servePCAP(w http.ResponseWriter, r *http.Request, file *os.File, name, digest string, end time.Time) {
+	defer file.Close()
+	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("ETag", `"`+digest+`"`)
+	http.ServeContent(w, r, name, end, file)
 }
 
 func captureResult(w http.ResponseWriter, data any, err error) {

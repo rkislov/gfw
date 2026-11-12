@@ -42,7 +42,7 @@ def main():
     parser.add_argument('--native', action='store_true')
     parser.add_argument('--unit-capabilities', action='store_true')
     options = parser.parse_args()
-    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.3-1.altp10.{os.uname().machine}.rpm')
+    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.4-1.altp10.{os.uname().machine}.rpm')
     run('ip', 'netns', 'add', 'capture-peer')
     run('ip', 'link', 'add', 'lan0', 'type', 'veth', 'peer', 'name', 'peer0')
     run('ip', 'link', 'set', 'peer0', 'netns', 'capture-peer')
