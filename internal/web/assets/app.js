@@ -34,7 +34,11 @@ async function api(path, options = {}) {
   let data;
   try { data = await response.json(); } catch { throw new Error('Сервер вернул некорректный ответ'); }
   if (!response.ok) {
-    if (response.status === 401 && !path.startsWith('/portal/totp/')) { $('login').hidden = false; $('app').hidden = true; }
+    if (response.status === 401 && !path.startsWith('/portal/totp/')) {
+      $('login').hidden = false;
+      $('app').hidden = true;
+      if (typeof resetOverview === 'function') resetOverview();
+    }
     throw new Error(data.error || 'Ошибка запроса');
   }
   return data;
