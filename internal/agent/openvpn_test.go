@@ -109,5 +109,6 @@ func TestOpenVPNTimeoutPartialFailureAndRetry(t *testing.T) {
 func (f *fakeOVPN) Stage([]openvpn.Material, openvpn.RuntimeConfig) error    { return nil }
 func (f *fakeOVPN) Refresh([]openvpn.CRLUpdate, openvpn.RuntimeConfig) error { return nil }
 func (f *fakeOVPN) CAs(openvpn.RuntimeConfig) []string                       { return nil }
+func (f *fakeOVPN) Disconnect(openvpn.Instance, uint32, string) error        { return nil }
 func (f *fakeOVPN) Logs(string) ([]string, error)                            { return nil, nil }
 func (f *fakeOVPN) Maintain(openvpn.RuntimeConfig) error                     { return nil }

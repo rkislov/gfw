@@ -161,15 +161,17 @@ func writeEvents(db *sql.DB, events []Alert) error {
 }
 
 func readEvents(db *sql.DB, limit int, before int64) ([]Alert, error) {
+	if before > 0 {
+		return queryEvents(db, " WHERE id<? ORDER BY id DESC LIMIT ?", before, limit)
+	}
+	return queryEvents(db, " ORDER BY id DESC LIMIT ?", limit)
+}
+
+func queryEvents(db *sql.DB, order string, args ...any) ([]Alert, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	q := "SELECT id,at,iface,src,dst,src_port,dst_port,proto,sid,severity,msg,rule_hash,action FROM alerts ORDER BY id DESC LIMIT ?"
-	args := []any{limit}
-	if before > 0 {
-		q = "SELECT id,at,iface,src,dst,src_port,dst_port,proto,sid,severity,msg,rule_hash,action FROM alerts WHERE id<? ORDER BY id DESC LIMIT ?"
-		args = []any{before, limit}
-	}
-	rows, err := db.QueryContext(ctx, q, args...)
+	const fields = "SELECT id,at,iface,src,dst,src_port,dst_port,proto,sid,severity,msg,rule_hash,action FROM alerts"
+	rows, err := db.QueryContext(ctx, fields+order, args...)
 	if err != nil {
 		return nil, err
 	}

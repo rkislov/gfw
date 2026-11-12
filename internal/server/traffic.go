@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -184,6 +185,22 @@ func (s *Server) deliverTraffic(ctx context.Context) bool {
 	err := agentclient.Call(op, s.AgentSocket, "GET", "/v1/traffic/batch", nil, &batch)
 	if err == nil && len(batch.Events) > 0 {
 		err = client.Insert(op, batch)
+		if err == nil {
+			// Forwarding has its own durable queue and never gates the ClickHouse ACK.
+			queueCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			queueErr := s.Store.EnqueueSIEMTraffic(queueCtx, batch.Events)
+			cancel()
+			s.siemMu.Lock()
+			if queueErr != nil {
+				if s.siemTrafficQueueError == "" {
+					slog.Warn("SIEM traffic queue write failed", "error", queueErr)
+				}
+				s.siemTrafficQueueError = "Не удалось сохранить пакет событий в очереди SIEM"
+			} else {
+				s.siemTrafficQueueError = ""
+			}
+			s.siemMu.Unlock()
+		}
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -192,7 +209,9 @@ func (s *Server) deliverTraffic(ctx context.Context) bool {
 	}
 	if err == nil && len(batch.Events) > 0 {
 		var result map[string]bool
-		err = agentclient.Call(op, s.AgentSocket, "POST", "/v1/traffic/ack", map[string]int64{"cursor": batch.Cursor}, &result)
+		ackCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		err = agentclient.Call(ackCtx, s.AgentSocket, "POST", "/v1/traffic/ack", map[string]int64{"cursor": batch.Cursor}, &result)
+		cancel()
 		if err == nil {
 			m.lastWrite = time.Now().UTC()
 		}

@@ -14,8 +14,8 @@ gfw-lab: #4, ESTABLISHED, IKEv2, a b
   remote 'remote-gateway.example.net' @ 192.0.2.4[4500]
   gfw-lab: #4, reqid 4, INSTALLED, TUNNEL, ESP:AES_GCM_16-256`
 	got := establishedPeers(details)
-	if len(got) != 2 || got[0] != (PeerSession{Identity: "gateway.example.net", Username: "alice"}) ||
-		got[1] != (PeerSession{Identity: "remote-gateway.example.net"}) {
+	if len(got) != 2 || got[0] != (PeerSession{IKEID: 1, Identity: "gateway.example.net", Username: "alice"}) ||
+		got[1] != (PeerSession{IKEID: 4, Identity: "remote-gateway.example.net"}) {
 		t.Fatal(got)
 	}
 }

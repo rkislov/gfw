@@ -62,13 +62,22 @@ type Plan struct {
 	Warnings []string `json:"warnings"`
 }
 type Session struct {
-	Name     string `json:"name"`
-	Username string `json:"username,omitempty"`
-	Address  string `json:"address"`
-	Remote   string `json:"remote"`
-	RXBytes  uint64 `json:"rx_bytes"`
-	TXBytes  uint64 `json:"tx_bytes"`
+	ClientID *uint32 `json:"client_id,omitempty"`
+	Name     string  `json:"name"`
+	Username string  `json:"username,omitempty"`
+	Address  string  `json:"address"`
+	Remote   string  `json:"remote"`
+	RXBytes  uint64  `json:"rx_bytes"`
+	TXBytes  uint64  `json:"tx_bytes"`
 }
+
+func (s Session) User() string {
+	if s.Username != "" {
+		return s.Username
+	}
+	return s.Name
+}
+
 type Status struct {
 	ID            string    `json:"id"`
 	Interface     string    `json:"interface"`
@@ -89,6 +98,7 @@ type Backend interface {
 	Activate(RuntimeConfig, RuntimeConfig) error
 	Verify(RuntimeConfig) error
 	Status(RuntimeConfig) ([]Status, error)
+	Disconnect(Instance, uint32, string) error
 	Logs(string) ([]string, error)
 	Maintain(RuntimeConfig) error
 }
@@ -261,7 +271,12 @@ func parseSessions(raw string) []Session {
 		if username == "UNDEF" {
 			username = ""
 		}
-		out = append(out, Session{Name: get("Common Name"), Username: username, Address: get("Virtual Address"), Remote: get("Real Address"), RXBytes: rx, TXBytes: tx})
+		var clientID *uint32
+		if id, err := strconv.ParseUint(get("Client ID"), 10, 32); err == nil {
+			value := uint32(id)
+			clientID = &value
+		}
+		out = append(out, Session{ClientID: clientID, Name: get("Common Name"), Username: username, Address: get("Virtual Address"), Remote: get("Real Address"), RXBytes: rx, TXBytes: tx})
 	}
 	return out
 }

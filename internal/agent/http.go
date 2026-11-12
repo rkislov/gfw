@@ -41,6 +41,7 @@ func jsonRequest(w http.ResponseWriter, r *http.Request, v any) error {
 func Handler(m *Manager) http.Handler {
 	mux := http.NewServeMux()
 	registerTraffic(mux, m)
+	registerVPNDisconnect(mux, m)
 	mux.HandleFunc("GET /v1/firewall/flow", func(w http.ResponseWriter, r *http.Request) {
 		state := FlowState{Interfaces: []string{}, Excluded: []FlowExclusion{}}
 		if m != nil {
@@ -161,6 +162,23 @@ func Handler(m *Manager) http.Handler {
 		}
 		if m.ids == nil {
 			jsonResponse(w, 200, []ids.Alert{})
+			return
+		}
+		if raw := r.URL.Query().Get("after"); raw != "" {
+			after, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil || after < 0 || r.URL.Query().Has("before") {
+				jsonResponse(w, 400, map[string]string{"error": "invalid alert cursor"})
+				return
+			}
+			source, ok := m.ids.(interface {
+				AlertsAfter(int64) ([]ids.Alert, error)
+			})
+			if !ok {
+				jsonResponse(w, 503, map[string]string{"error": "forward alert cursor unavailable"})
+				return
+			}
+			v, err := source.AlertsAfter(after)
+			call(w, v, err)
 			return
 		}
 		var before int64

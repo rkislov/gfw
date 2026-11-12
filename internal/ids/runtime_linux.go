@@ -628,6 +628,10 @@ func (r *Runtime) Alerts(limit int, before int64) ([]Alert, error) {
 	return readEvents(r.db, limit, before)
 }
 
+func (r *Runtime) AlertsAfter(id int64) ([]Alert, error) {
+	return queryEvents(r.db, " WHERE id>? ORDER BY id LIMIT 100", id)
+}
+
 func (r *Runtime) Logs() []string {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -18,6 +18,7 @@ func (*Linux) Prepare(c, old RuntimeConfig) (Plan, error) {
 func (*Linux) Activate(RuntimeConfig, RuntimeConfig) error { return errors.New("requires Linux") }
 func (*Linux) Verify(RuntimeConfig) error                  { return errors.New("requires Linux") }
 func (*Linux) Status(RuntimeConfig) ([]Status, error)      { return []Status{}, nil }
+func (*Linux) Disconnect(Instance, uint32, string) error   { return errors.New("requires Linux") }
 func (*Linux) Logs(string) ([]string, error)               { return []string{}, nil }
 func (*Linux) Maintain(RuntimeConfig) error                { return nil }
 func (*Linux) Close() error                                { return nil }

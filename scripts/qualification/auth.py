@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Isolated GFW OpenLDAP and FreeRADIUS protocol checks."""
-import io, zipfile, base64, hashlib, hmac, http.cookiejar, json, os, pathlib, re, socket, struct, subprocess, time, urllib.error, urllib.request
+import io, zipfile, base64, hashlib, hmac, http.cookiejar, json, os, pathlib, re, signal, socket, struct, subprocess, time, urllib.error, urllib.request
 if os.environ.get("GFW_QUALIFICATION_LAB") != "1":
     raise SystemExit("Run only inside a fresh isolated Linux lab with GFW_QUALIFICATION_LAB=1.")
 root=pathlib.Path('/state')
@@ -61,6 +61,14 @@ try:
     sh('ip','-n','vpn','addr','add','198.51.100.2/24','dev','wan1')
     sh('ip','-n','vpn','link','set','wan1','up')
     sh('ip','-n','vpn','link','set','lo','up')
+    sh('ip','netns','add','vpnpeer')
+    sh('ip','link','add','peer0','type','veth','peer','name','peer1','netns','vpnpeer')
+    sh('ip','addr','add','198.51.101.1/24','dev','peer0')
+    sh('ip','link','set','peer0','up')
+    sh('ip','-n','vpnpeer','addr','add','198.51.101.2/24','dev','peer1')
+    sh('ip','-n','vpnpeer','link','set','peer1','up')
+    sh('ip','-n','vpnpeer','link','set','lo','up')
+    sh('ip','-n','vpnpeer','route','add','198.51.100.1/32','via','198.51.101.1')
     (root/'db').mkdir()
     sh('openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN=GFW fixture CA','-keyout','/state/ca.key','-out','/state/ca.pem')
     sh('openssl','req','-new','-newkey','rsa:2048','-nodes','-subj','/CN=127.0.0.1','-keyout','/state/ldap.key','-out','/state/ldap.csr')
@@ -118,7 +126,7 @@ userPassword: {password}
             '-w','fixture-ldap-reader-pass'],capture_output=True).returncode==0
     wait(ldap_ready)
     users=pathlib.Path('/etc/freeradius/3.0/mods-config/files/authorize')
-    users.write_text(f'radiususer Cleartext-Password := "{password}"\nradiustotp Cleartext-Password := "{password}"\n'+users.read_text())
+    users.write_text(f'radiuspeer Cleartext-Password := "{password}"\nradiususer Cleartext-Password := "{password}"\nradiustotp Cleartext-Password := "{password}"\n'+users.read_text())
     clients=pathlib.Path('/etc/freeradius/3.0/clients.conf')
     clients.write_text(clients.read_text().replace('testing123',secret))
     radius=start('radius',['freeradius','-X'])
@@ -160,6 +168,7 @@ userPassword: {password}
     emit('radius-negative',wrong_secret_denied=True)
     ca,_=admin('POST','/pki/ca',{'name':'VPN Test','common_name':'VPN Test Root','days':365})
     srv,_=admin('POST','/pki/issue',{'name':'gateway','common_name':'gateway','ca_id':ca['id'],'usage':'server','days':30,'ips':['198.51.100.1']})
+    admin('PUT','/users',{'name':'radiuspeer','source':'radius','role':'user','grants':['openvpn:'+'2'*32,'ipsec:'+'4'*32]})
     instances=[]
     for index,provider in enumerate(['ldap','radius'],1):
         name=provider+'user'
@@ -167,6 +176,7 @@ userPassword: {password}
             'certificate_id':srv['id'],'address':f'10.8{index}.0.1/24','bind_address':'198.51.100.1',
             'port':1193+index,'protocol':'udp','clients':[{'username':name,'address':f'10.8{index}.0.2'}],
             'routes':[],'auth':{'password':provider,'certificate':False,'totp':False},'public_endpoint':'198.51.100.1'})
+    instances[1]['clients'].append({'username':'radiuspeer','address':'10.82.0.3'})
     _,h=admin('GET','/openvpn/runtime/config')
     draft,_=admin('PUT','/openvpn/runtime/config',{'instances':instances},{'If-Match':h['ETag']})
     admin('POST','/openvpn/runtime/apply',{'id':'auth-real-vpn','revision':draft['revision'],'timeout_seconds':60})
@@ -181,6 +191,32 @@ userPassword: {password}
         vpn=start('vpn-'+provider,['ip','netns','exec','vpn','/usr/sbin/openvpn','--config','/state/client.ovpn','--auth-user-pass','/state/vpn.password'])
         wait(lambda:'Initialization Sequence Completed' in (root/('vpn-'+provider+'.log')).read_text(),20)
         assert f'10.8{index}.0.2/24' in sh('ip','-n','vpn','-4','address')
+        if provider == 'radius':
+            peer, csrf = login('radiuspeer')
+            second, _ = request('POST','/portal/export',{'id':'openvpn:'+'2'*32},{'X-GFW-CSRF':csrf},peer)
+            (root/'peer.ovpn').write_bytes(second)
+            (root/'peer.password').write_text('radiuspeer\n'+password+'\n')
+            os.chmod(root/'peer.password',0o600)
+            second_vpn = start('vpn-peer',['ip','netns','exec','vpnpeer','/usr/sbin/openvpn','--config','/state/peer.ovpn','--auth-user-pass','/state/peer.password'])
+            wait(lambda:'Initialization Sequence Completed' in (root/'vpn-peer.log').read_text(),20)
+            def openvpn_sessions():
+                state,_ = admin('GET','/openvpn/runtime/state')
+                runtime = next(item for item in state['agent']['runtime'] if item['id'] == '2'*32)
+                return {item['username']: item['client_id'] for item in runtime['sessions']}
+            current = wait(lambda: (found if len(found := openvpn_sessions()) == 2 else None))
+            # Keep this client from reconnecting before verifying server-side state.
+            vpn.send_signal(signal.SIGSTOP)
+            try:
+                payload = {'profile_id':'2'*32,'session_id':current['radiususer'],'user':'radiususer'}
+                request('POST','/vpn/openvpn/disconnect',dict(payload,user='radiuspeer'),{'Authorization':'Bearer '+key},expected=409)
+                admin('POST','/vpn/openvpn/disconnect',payload)
+                wait(lambda: openvpn_sessions() == {'radiuspeer':current['radiuspeer']})
+                assert second_vpn.poll() is None
+            finally:
+                vpn.send_signal(signal.SIGCONT)
+                second_vpn.terminate()
+                second_vpn.wait(timeout=8)
+            emit('openvpn-targeted-disconnect',wrong_user_denied=True,peer_session_unchanged=True)
         vpn.terminate()
         vpn.wait(timeout=8)
         emit(provider+'-openvpn',handshake=True,portal_export=True)
@@ -224,6 +260,39 @@ userPassword: {password}
                 out=sh(*cmd,'--initiate','--uri','unix:///state/client.vici','--child','gfw','--timeout','8')
                 assert 'CHILD_SA' in out and 'established' in out
                 emit(provider+'-ikev2',handshake=True,portal_export=True)
+                if provider == 'radius':
+                    peer, csrf = login('radiuspeer')
+                    second,_ = request('POST','/portal/export',{'id':'ipsec:'+tunnel['id']},{'X-GFW-CSRF':csrf},peer)
+                    peer_dir = root/'ike-peer'
+                    zipfile.ZipFile(io.BytesIO(second)).extractall(peer_dir)
+                    config2 = peer_dir/'swanctl.conf'
+                    config2.write_text(config2.read_text().replace('REPLACE_WITH_PASSWORD',password))
+                    peer_conf = root/'strongswan-peer.conf'
+                    peer_conf.write_text(strong.read_text().replace('client.vici','peer.vici'))
+                    ike2=start('ike-peer',['ip','netns','exec','vpnpeer','unshare','-m','sh','-ec',
+                        'mount --make-rprivate /; mount -t tmpfs tmpfs /run; exec env STRONGSWAN_CONF=/state/strongswan-peer.conf /usr/lib/ipsec/charon'])
+                    try:
+                        wait(lambda:(root/'peer.vici').exists() and ike2.poll() is None)
+                        peer_cmd=['ip','netns','exec','vpnpeer','/usr/sbin/swanctl']
+                        sh(*peer_cmd,'--load-all','--uri','unix:///state/peer.vici','--file',str(config2))
+                        peer_out=sh(*peer_cmd,'--initiate','--uri','unix:///state/peer.vici','--child','gfw','--timeout','8')
+                        assert 'CHILD_SA' in peer_out and 'established' in peer_out
+                        def ipsec_sessions():
+                            state,_ = admin('GET','/ipsec/state')
+                            runtime = next(item for item in state['agent']['runtime'] if item['id'] == tunnel['id'])
+                            return {item.get('username',item['identity']): item['ike_id'] for item in runtime.get('sessions',[])}
+                        current = wait(lambda: (found if len(found := ipsec_sessions()) == 2 else None))
+                        payload = {'profile_id':tunnel['id'],'session_id':current['radiususer'],'user':'radiususer'}
+                        request('POST','/vpn/ipsec/disconnect',dict(payload,user='radiuspeer'),{'Authorization':'Bearer '+key},expected=409)
+                        admin('POST','/vpn/ipsec/disconnect',payload)
+                        wait(lambda: ipsec_sessions() == {'radiuspeer':current['radiuspeer']})
+                        assert ike2.poll() is None
+                        events,_ = admin('GET','/audit')
+                        assert any('vpn.disconnect.ipsec.success:' in e['action'] and e['actor']=='admin' for e in events)
+                        emit('ipsec-targeted-disconnect',wrong_user_denied=True,peer_sa_unchanged=True,audited=True)
+                    finally:
+                        ike2.terminate()
+                        ike2.wait(timeout=10)
             finally:
                 ike.terminate()
                 ike.wait(timeout=10)

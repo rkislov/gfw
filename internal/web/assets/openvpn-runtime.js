@@ -21,10 +21,27 @@ async function ovpnRuntimeSave(config){ovpnRuntimeSnapshot=await api('/openvpn/r
 function ovpnRuntimeRender(){
  $('ovpn-runtime-instances').replaceChildren();
  for(const i of ovpnRuntimeSnapshot?.config.instances||[]){const r=ovpnRuntimeState?.agent.runtime?.find(x=>x.id===i.id),row=node('div','','py-4');row.append(node('p',`${i.name} · ${i.mode==='server'?'Сервер':'Клиент'} · ${i.interface}`,'font-medium'),node('p',`${i.enabled?'Включён':'Выключен'} · ${i.address} · ${i.protocol.toUpperCase()} ${i.mode==='server'?i.bind_address:i.remote}:${i.port}`,'mt-1 text-sm text-slate-600'),node('p',r?.blocked?`Заблокирован: ${r.blocked}`:r?.ready?`Работает · CRL №${r.crl_number}`:r?.running?'Процесс запущен, подключение не готово':'Процесс остановлен','mt-2 text-sm '+(r?.ready?'text-teal-800':'text-amber-800')));
- if(r?.state)row.append(node('pre',r.state,'mt-2 whitespace-pre-wrap break-all text-xs text-slate-500'));for(const client of r?.sessions||[])row.append(node('p',typeof client==='string'?client:`${client.name} · ${client.address} · ${client.remote} · RX ${client.rx_bytes} / TX ${client.tx_bytes} байт`,'mt-1 break-all text-xs font-mono text-slate-500'));
+ if(r?.state)row.append(node('pre',r.state,'mt-2 whitespace-pre-wrap break-all text-xs text-slate-500'));
  const actions=node('div','','mt-3 flex flex-wrap gap-4');actions.append(ovpnAction('Изменить',()=>{const f=$('ovpn-runtime-form');f.reset();f.elements.mode.value=i.mode;setVPNMethod(f,i.auth);ovpnRuntimeMode();for(const[k,v]of Object.entries(i)){const el=f.elements[k];if(!el)continue;if(el.type==='checkbox')el.checked=v;else el.value=Array.isArray(v)?v.join('\n'):v;}ovpnRuntimeClients=structuredClone(i.clients||[]);ovpnRuntimeRenderClients();ovpnRuntimeMark();f.elements.name.focus();}),ovpnAction('Удалить из черновика',async()=>{const c=structuredClone(ovpnRuntimeSnapshot.config);c.instances=c.instances.filter(x=>x.id!==i.id);await ovpnRuntimeSave(c);message('Экземпляр удалён из черновика. Для остановки примените конфигурацию.');}),ovpnAction('Журнал',async()=>{const lines=await api('/openvpn/runtime/logs/'+encodeURIComponent(i.id));$('ovpn-runtime-logs').textContent=lines.join('\n')||'Журнал пока пуст.';$('ovpn-runtime-logs').hidden=false;}));row.append(actions);$('ovpn-runtime-instances').append(row);
  }
  if(!ovpnRuntimeSnapshot?.config.instances?.length)$('ovpn-runtime-instances').append(node('p','Экземпляров пока нет. Добавьте сервер или клиент ниже.','py-3 text-sm text-slate-500'));ovpnRuntimeButtons();
+ const sessions = $('ovpn-runtime-sessions');
+ sessions.replaceChildren();
+ for (const instance of ovpnRuntimeState?.agent.active?.instances || []) {
+   if (instance.mode !== 'server') continue;
+   const runtime = ovpnRuntimeState.agent.runtime?.find(item => item.id === instance.id);
+   for (const client of runtime?.sessions || []) {
+     if (typeof client !== 'object') continue;
+     const user = client.username || client.name;
+     const row = node('div', '', 'flex flex-wrap items-center justify-between gap-3 py-2');
+     row.append(node('span', `${user} · ${instance.name} · ${client.address} · ${client.remote} · RX ${client.rx_bytes} / TX ${client.tx_bytes}`, 'break-all text-sm'));
+     if (Number.isInteger(client.client_id) && user && !runtime.sessions_error) {
+       row.append(vpnDisconnectButton('openvpn', instance.id, client.client_id, user, ovpnRuntimePoll));
+     }
+     sessions.append(row);
+   }
+ }
+ if (!sessions.children.length) sessions.append(node('p', 'Нет активных клиентских подключений.', 'py-2 text-sm text-slate-500'));
 }
 async function ovpnRuntimePoll(){
  if(!isAdmin()||$('app').hidden||ovpnRuntimePolling)return;ovpnRuntimePolling=true;try{ovpnRuntimeState=await api('/openvpn/runtime/state');const s=ovpnRuntimeState.agent,p=s.pending,crl=ovpnRuntimeState.crl_sync;$('ovpn-runtime-status').textContent=s.enabled?`Подтверждённая ревизия: ${s.confirmed_revision||'ещё нет'}.${s.runtime_error?' Ошибка: '+s.runtime_error:''}`:s.runtime_error||'Применение отключено. Нужен Linux-агент с -enable-openvpn.';$('ovpn-runtime-crl-status').textContent=crl.error?`Доставка CRL ожидает повтора: ${crl.error}`:crl.last_success&&!crl.last_success.startsWith('0001')?`CRL синхронизирован: ${new Date(crl.last_success).toLocaleString()}`:'CRL будет синхронизирован после подключения агента.';$('ovpn-runtime-pending').hidden=!p;$('ovpn-runtime-pending-label').textContent=p?`${p.kind==='openvpn'?'Изменение OpenVPN':'Ожидает другое изменение: '+p.kind} · ${p.status}${p.error?' · '+p.error:''}`:'';ovpnRuntimeCount();ovpnRuntimeRender();}catch(e){$('ovpn-runtime-status').textContent=e.message;}finally{ovpnRuntimePolling=false;ovpnRuntimeButtons();}

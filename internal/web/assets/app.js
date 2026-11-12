@@ -22,7 +22,7 @@ const titles = {
   traffic: ['Журнал трафика', 'Соединения conntrack и срабатывания правил межсетевого экрана.'],
   xdp: ['Ранняя фильтрация XDP', 'Блокировки по IP/CIDR на входе WAN до обработки межсетевым экраном.'],
   capture: ['Захват пакетов', 'Выберите интерфейс и фильтр, затем скачайте PCAP.'],
-  audit: ['Аудит изменений', 'История сохранения конфигурации устройства.']
+  audit: ['Аудит изменений', 'Административные события и отправка в SIEM.']
 };
 function node(tag, text, classes = '') { const n = document.createElement(tag); n.textContent = text; n.className = classes; return n; }
 function message(text) { $('message-text').textContent = text; $('message').hidden = false; }
@@ -39,6 +39,7 @@ async function api(path, options = {}) {
     if (response.status === 401 && !path.startsWith('/portal/totp/')) {
       $('login').hidden = false;
       $('app').hidden = true;
+      resetSIEM();
       if (typeof resetOverview === 'function') resetOverview();
     }
     throw new Error(data.error || 'Ошибка запроса');
@@ -63,6 +64,7 @@ function page(name) {
   if (name === 'traffic' && typeof refreshTraffic === 'function') void refreshTraffic();
   if (name === 'feed' && typeof refreshFeed === 'function') void refreshFeed();
   if (name === 'portal') void refreshPortal();
+  if (name === 'audit') { void refreshSIEM(); void refreshAudit(); }
   if (name === 'users') void refreshIdentityUsers();
   if (name === 'sysctl') void refreshSysctl();
   if (name === 'ipsec' && typeof refreshIPsec === 'function') void refreshIPsec();
@@ -71,6 +73,28 @@ function page(name) {
 }
 window.addEventListener('hashchange', () => page(location.hash.slice(1)));
 for (const el of document.querySelectorAll('.nav')) el.addEventListener('click', () => { location.hash = el.dataset.page; });
+function vpnDisconnectButton(protocol, profileID, sessionID, user, reload) {
+  const button = node('button', 'Отключить сеанс', 'text-sm text-red-700 disabled:opacity-40');
+  button.type = 'button';
+  button.setAttribute('aria-label', `Отключить сеанс ${user} #${sessionID}`);
+  button.addEventListener('click', async () => {
+    if (!window.confirm(`Завершить сеанс ${user} #${sessionID}? При сохранённом доступе клиент сможет подключиться снова.`)) return;
+    button.disabled = true;
+    try {
+      await api(`/vpn/${protocol}/disconnect`, {
+        method: 'POST', body: JSON.stringify({ profile_id: profileID, session_id: sessionID, user })
+      });
+      message(`Сеанс ${user} завершён.`);
+    } catch (err) {
+      message(err.message);
+    } finally {
+      await reload();
+      button.disabled = false;
+    }
+  });
+  return button;
+}
+
 function renderRules() {
   if (typeof renderFlowDraft === 'function') renderFlowDraft();
   if (typeof renderFeedConsumers === "function") renderFeedConsumers();
@@ -100,6 +124,136 @@ function renderRules() {
     tr.append(actions); $('rules').append(tr);
   });
 }
+const siemForm = $('siem-form');
+let siemRevision = 0;
+let siemDirty = false;
+
+function resetSIEM() {
+  siemRevision = 0;
+  siemDirty = false;
+  siemForm.reset();
+  $('siem-test').disabled = true;
+  $('siem-traffic-status').textContent = '';
+}
+
+function siemTransport() {
+  siemForm.elements.ca_pem.disabled = siemForm.elements.transport.value !== 'tls';
+}
+
+async function refreshSIEM() {
+  const status = $('siem-status');
+  const account = currentAccount;
+  try {
+    const cfg = await api('/siem');
+    if (account !== currentAccount || $('app').hidden) return;
+    if (!siemDirty) {
+      siemRevision = cfg.revision;
+      siemForm.elements.address.value = cfg.address;
+      siemForm.elements.transport.value = cfg.transport;
+      siemForm.elements.ca_pem.value = cfg.ca_pem;
+      siemForm.elements.enabled.checked = cfg.enabled;
+      const filter = cfg.traffic || {};
+      for (const source of ['conntrack', 'nflog']) {
+        for (const checkbox of siemForm.querySelectorAll(`[name="${source}"]`)) {
+          checkbox.checked = (filter[source] || []).includes(checkbox.value);
+        }
+      }
+      siemForm.elements.traffic_ip.value = filter.ip || '';
+      siemForm.elements.traffic_port.value = filter.port || '';
+      siemForm.elements.traffic_protocol.value = filter.protocol ?? '';
+      siemForm.elements.traffic_rule.value = filter.rule || '';
+      siemForm.elements.traffic_direction.value = filter.direction || '';
+      siemTransport();
+    }
+    $('siem-test').disabled = !cfg.address || siemDirty;
+    status.textContent = cfg.delivery_error ? `Доставка ожидает повтора. ${cfg.delivery_error}`
+      : cfg.enabled ? cfg.last_sent ? `Последняя отправка · ${new Date(cfg.last_sent).toLocaleString('ru-RU')}` : 'Ожидает первой отправки.'
+        : 'Отправка выключена.';
+    const traffic = cfg.traffic_stats;
+    $('siem-traffic-status').textContent = traffic
+      ? [`Трафик в очереди SIEM · ${traffic.queued}`, `Вытеснено · ${traffic.evicted}`,
+        traffic.last_sent && `Последняя отправка трафика · ${new Date(traffic.last_sent).toLocaleString('ru-RU')}`,
+        cfg.traffic_error && `Доставка ожидает повтора · ${cfg.traffic_error}`, cfg.traffic_queue_error].filter(Boolean).join('. ')
+      : '';
+  } catch (err) {
+    status.textContent = err.message;
+  }
+}
+
+siemForm.addEventListener('input', () => {
+  siemDirty = true;
+  $('siem-test').disabled = true;
+  siemTransport();
+});
+siemForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!siemRevision) return;
+  const submit = event.submitter;
+  submit.disabled = true;
+  const { address, transport, ca_pem, enabled, traffic_ip, traffic_port, traffic_protocol, traffic_rule, traffic_direction } = siemForm.elements;
+  const form = new FormData(siemForm);
+  try {
+    await api('/siem', { method: 'PUT', body: JSON.stringify({
+      revision: siemRevision, enabled: enabled.checked, address: address.value,
+      transport: transport.value, ca_pem: ca_pem.disabled ? '' : ca_pem.value,
+      traffic: {
+        conntrack: form.getAll('conntrack'), nflog: form.getAll('nflog'),
+        ip: traffic_ip.value.trim(), port: Number(traffic_port.value),
+        protocol: traffic_protocol.value === '' ? null : Number(traffic_protocol.value),
+        rule: traffic_rule.value.trim(), direction: traffic_direction.value
+      }
+    }) });
+    siemDirty = false;
+    await refreshSIEM();
+    message('Настройки SIEM сохранены.');
+  } catch (err) {
+    message(err.message);
+  } finally {
+    submit.disabled = false;
+  }
+});
+$('siem-test').addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    await api('/siem/test', { method: 'POST' });
+    message('Тестовое CEF-событие отправлено. Проверьте приём в SIEM.');
+  } catch (err) {
+    message(err.message);
+  } finally {
+    button.disabled = siemDirty;
+  }
+});
+
+function renderAudit(audit) {
+  const auditRows = audit.map(event => {
+    const row = node('div', '', 'flex flex-wrap justify-between gap-3 p-4 text-sm');
+    const disconnect = /^vpn\.disconnect\.(openvpn|ipsec)\.(request|success|failed):([a-f0-9]+):(\d+):(.+)$/.exec(event.action);
+    let action = event.action === 'policy.draft.save' ? 'Сохранён черновик' : event.action;
+    if (disconnect) {
+      const [, protocol, result, profile, id, user] = disconnect;
+      const labels = {request: 'Запрошено отключение', success: 'Сеанс отключён', failed: 'Отключение не подтверждено'};
+      action = `${labels[result]} · ${protocol === 'openvpn' ? 'OpenVPN' : 'IPsec'} · ${user} · #${id} · профиль ${profile}`;
+    }
+    row.append(
+      node('span', event.revision ? `${action} · ревизия ${event.revision}` : action, 'font-medium'),
+      node('span', `${event.actor} · ${new Date(event.at).toLocaleString('ru-RU')}`, 'text-slate-500 text-xs')
+    );
+    return row;
+  });
+  if (!auditRows.length) auditRows.push(node('p', 'Изменений конфигурации ещё нет.', 'p-5 text-sm text-slate-500'));
+  $('audit').replaceChildren(...auditRows);
+  $('overview-audit').replaceChildren(...auditRows.slice(0, 4).map(row => row.cloneNode(true)));
+}
+
+async function refreshAudit() {
+  try {
+    renderAudit(await api('/audit'));
+  } catch (err) {
+    message(err.message);
+  }
+}
+
 async function refresh() {
   $('message').hidden = true;
   if (!isAdmin() || location.hash === '#portal' && currentAccount?.personal) return refreshPortal();
@@ -125,18 +279,7 @@ async function refresh() {
     tr.append(node('td', link.name + (link.loopback ? ' · loopback' : ''), 'p-4 font-medium'), node('td', link.up ? 'UP' : 'DOWN', 'p-4 text-xs ' + (link.up ? 'text-teal-700' : 'text-slate-400')), addresses, node('td', link.mtu, 'p-4 text-slate-500'), node('td', link.mac || '—', 'p-4 font-mono text-xs text-slate-500')); $('interfaces').append(tr);
   }
   if (links === null) { const tr = node('tr', ''); const td = node('td', 'Инвентаризация недоступна. Проверьте подключение к агенту.', 'p-5 text-red-700'); td.colSpan = 5; tr.append(td); $('interfaces').append(tr); }
-  const auditRows = audit.map(event => {
-    const row = node('div', '', 'flex flex-wrap justify-between gap-3 p-4 text-sm');
-    const action = event.action === 'policy.draft.save' ? 'Сохранён черновик' : event.action;
-    row.append(
-      node('span', `${action} · ревизия ${event.revision}`, 'font-medium'),
-      node('span', `${event.actor} · ${new Date(event.at).toLocaleString('ru-RU')}`, 'text-slate-500 text-xs')
-    );
-    return row;
-  });
-  if (!auditRows.length) auditRows.push(node('p', 'Изменений конфигурации ещё нет.', 'p-5 text-sm text-slate-500'));
-  $('audit').replaceChildren(...auditRows);
-  $('overview-audit').replaceChildren(...auditRows.slice(0, 4).map(row => row.cloneNode(true)));
+  renderAudit(audit);
   renderRules();
   await pollChanges();
   if (typeof refreshNetwork === "function") await refreshNetwork();
@@ -166,7 +309,7 @@ $('login-form').addEventListener('submit', async e => {
   finally { button.disabled = false; }
 });
 $('refresh').addEventListener('click', async e => { e.currentTarget.disabled = true; try { await refresh(); } catch (err) { message(err.message); } finally { $('refresh').disabled = false; } });
-$('logout').addEventListener('click', async () => { try { await api('/auth/logout', { method: 'POST', body: '{}' }); csrf = ''; currentAccount = null; if (typeof resetOverview === 'function') resetOverview(); $('message').hidden = true; resetPortal(); if (typeof resetFlow === 'function') resetFlow(); if (typeof resetXDP === 'function') resetXDP(); if (typeof resetCapture === 'function') resetCapture(); if (typeof resetTraffic === 'function') resetTraffic(); if (typeof resetFeed === 'function') resetFeed(); if (typeof resetIDS === 'function') resetIDS(); if (typeof resetFESS === 'function') resetFESS(); snapshot = null; dirty = false; if (typeof resetNetwork === 'function') resetNetwork(); if (typeof resetServices === 'function') resetServices(); if (typeof resetPKI === 'function') resetPKI(); if (typeof resetWireGuard === 'function') resetWireGuard(); if (typeof resetOpenVPN === 'function') resetOpenVPN(); $('dirty').textContent = 'Нет несохранённых изменений'; $('login').hidden = false; $('app').hidden = true; } catch (err) { message(err.message); } });
+$('logout').addEventListener('click', async () => { try { await api('/auth/logout', { method: 'POST', body: '{}' }); csrf = ''; currentAccount = null; resetSIEM(); if (typeof resetOverview === 'function') resetOverview(); $('message').hidden = true; resetPortal(); if (typeof resetFlow === 'function') resetFlow(); if (typeof resetXDP === 'function') resetXDP(); if (typeof resetCapture === 'function') resetCapture(); if (typeof resetTraffic === 'function') resetTraffic(); if (typeof resetFeed === 'function') resetFeed(); if (typeof resetIDS === 'function') resetIDS(); if (typeof resetFESS === 'function') resetFESS(); snapshot = null; dirty = false; if (typeof resetNetwork === 'function') resetNetwork(); if (typeof resetServices === 'function') resetServices(); if (typeof resetPKI === 'function') resetPKI(); if (typeof resetWireGuard === 'function') resetWireGuard(); if (typeof resetOpenVPN === 'function') resetOpenVPN(); $('dirty').textContent = 'Нет несохранённых изменений'; $('login').hidden = false; $('app').hidden = true; } catch (err) { message(err.message); } });
 $('rule-form').addEventListener('submit', e => {
   e.preventDefault(); const f = new FormData(e.target);
   const rule = Object.fromEntries(f); rule.id = rule.id || crypto.randomUUID(); rule.source = rule.source || ''; rule.destination = rule.destination || ''; rule.protocol = rule.service ? 'any' : (rule.protocol || 'any'); rule.destination_port = rule.service ? 0 : Number(rule.destination_port || 0);
@@ -241,5 +384,8 @@ for (const [button, action] of [['confirm-change', 'confirm'], ['rollback-change
     finally { changeBusy = false; await pollChanges(); }
   });
 }
-setInterval(() => { if (!changeBusy) pollChanges(); }, 3000);
+setInterval(() => {
+  if (!changeBusy) pollChanges();
+  if (isAdmin() && !$('app').hidden && location.hash === '#audit') void refreshSIEM();
+}, 3000);
 setInterval(updateCountdown, 1000);

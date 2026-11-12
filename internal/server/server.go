@@ -34,25 +34,32 @@ type session struct {
 	Expires time.Time
 }
 type Server struct {
-	identity      *identity.Store
-	traffic       *trafficManager
-	fess          *fessManager
-	feed          *feedManager
-	ipsecCRLSync  CRLSyncStatus
-	ipsecCRLSent  map[string]string
-	crlMu         sync.Mutex
-	crlSync       CRLSyncStatus
-	crlSent       map[string]string
-	PKI           *pki.Manager
-	Store         *store.Store
-	Token         string
-	AgentSocket   string
-	mu            sync.Mutex
-	changeMu      sync.Mutex
-	fileIOCMu     sync.Mutex
-	sessions      map[string]session
-	loginWindow   time.Time
-	loginAttempts int
+	identity              *identity.Store
+	traffic               *trafficManager
+	fess                  *fessManager
+	feed                  *feedManager
+	ipsecCRLSync          CRLSyncStatus
+	ipsecCRLSent          map[string]string
+	crlMu                 sync.Mutex
+	crlSync               CRLSyncStatus
+	crlSent               map[string]string
+	PKI                   *pki.Manager
+	Store                 *store.Store
+	Token                 string
+	AgentSocket           string
+	mu                    sync.Mutex
+	changeMu              sync.Mutex
+	fileIOCMu             sync.Mutex
+	siemMu                sync.Mutex
+	siemError             string
+	siemRevision          int64
+	siemTrafficRevision   int64
+	siemTrafficError      string
+	siemTrafficQueueError string
+	siemTrafficConfigMu   sync.Mutex
+	sessions              map[string]session
+	loginWindow           time.Time
+	loginAttempts         int
 }
 
 func New(s *store.Store, token, agent string) *Server {
@@ -107,7 +114,9 @@ func (s *Server) Handler() http.Handler {
 	s.trafficRoutes(api)
 	s.captureRoutes(api)
 	s.xdpRoutes(api)
+	s.siemRoutes(api)
 	s.openVPNRoutes(api)
+	api.HandleFunc("POST /api/v1/vpn/{protocol}/disconnect", s.disconnectVPN)
 	api.HandleFunc("GET /api/v1/auth/me", s.me)
 	api.HandleFunc("POST /api/v1/auth/logout", s.logout)
 	api.HandleFunc("GET /api/v1/status", s.status)
@@ -332,7 +341,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	respond(w, 200, map[string]bool{"ok": true})
 }
 
-var version = "0.22.4-dev"
+var version = "0.22.5-dev"
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	snap, err := s.Store.Read(r.Context())

@@ -42,6 +42,15 @@ function renderIPsec() {
     box.append(node('p', state?.blocked || (state?.established ? 'Туннель установлен'
       : state?.loaded ? 'Конфигурация загружена · ожидание соединения' : 'Туннель не активен'), 'mt-1 text-sm'));
     if (state?.crl_number) box.append(node('p', 'CRL № ' + state.crl_number, 'text-xs text-slate-500'));
+    if (active.some(t => t.id === tunnel.id && t.auth)) {
+      for (const session of state?.sessions || []) {
+        const user = session.username || session.identity;
+        const row = node('div', '', 'flex flex-wrap items-center justify-between gap-3 py-2');
+        row.append(node('span', `${user} · IKE SA #${session.ike_id ?? '—'}`, 'break-all text-sm'));
+        if (session.ike_id && user) row.append(vpnDisconnectButton('ipsec', tunnel.id, session.ike_id, user, refreshIPsec));
+        box.append(row);
+      }
+    }
     if (state?.details) box.append(node('pre', state.details, 'mt-2 whitespace-pre-wrap break-words text-xs'));
     if (inDraft) {
       const actions = node('div', '', 'mt-2 flex gap-4 text-sm');

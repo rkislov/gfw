@@ -338,8 +338,14 @@ func management(path, command string) (string, error) {
 		return "", e
 	}
 	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(time.Second))
-	if _, e = io.WriteString(conn, command+"\n"); e != nil {
+	return managementCommand(conn, command, false)
+}
+
+func managementCommand(conn net.Conn, command string, singleReply bool) (string, error) {
+	if err := conn.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		return "", err
+	}
+	if _, e := io.WriteString(conn, command+"\n"); e != nil {
 		return "", e
 	}
 	scan := bufio.NewScanner(io.LimitReader(conn, 128<<10))
@@ -347,7 +353,15 @@ func management(path, command string) (string, error) {
 	var out strings.Builder
 	for scan.Scan() {
 		line := scan.Text()
-		if line == "END" {
+		if singleReply {
+			switch {
+			case strings.HasPrefix(line, "SUCCESS:"):
+				return line, nil
+			case strings.HasPrefix(line, "ERROR:"):
+				return "", fmt.Errorf("OpenVPN: %s", line)
+			}
+		}
+		if line == "END" && !singleReply {
 			return out.String(), nil
 		}
 		if !strings.HasPrefix(line, ">") {
@@ -355,7 +369,7 @@ func management(path, command string) (string, error) {
 			out.WriteByte('\n')
 		}
 	}
-	if e = scan.Err(); e != nil {
+	if e := scan.Err(); e != nil {
 		return out.String(), e
 	}
 	return out.String(), errors.New("incomplete OpenVPN management response")
@@ -761,6 +775,25 @@ func (l *Linux) Status(c RuntimeConfig) ([]Status, error) {
 	}
 	return out, nil
 }
+func (l *Linux) Disconnect(instance Instance, id uint32, user string) error {
+	conn, err := net.DialTimeout("unix", filepath.Join(l.dir(instance), "m.sock"), 500*time.Millisecond)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	raw, err := managementCommand(conn, "status 3", false)
+	if err != nil {
+		return err
+	}
+	for _, session := range parseSessions(raw) {
+		if session.ClientID != nil && *session.ClientID == id && session.User() == user {
+			_, err = managementCommand(conn, fmt.Sprintf("client-kill %d", id), true)
+			return err
+		}
+	}
+	return vpncred.ErrSessionGone
+}
+
 func (l *Linux) Logs(id string) ([]string, error) {
 	if !IDPattern.MatchString(id) {
 		return nil, errors.New("invalid instance ID")

@@ -187,8 +187,16 @@ func Preview(c Config) Plan {
 }
 
 type PeerSession struct {
+	IKEID    uint32 `json:"ike_id,omitempty"`
 	Identity string `json:"identity"`
 	Username string `json:"username,omitempty"`
+}
+
+func (s PeerSession) User() string {
+	if s.Username != "" {
+		return s.Username
+	}
+	return s.Identity
 }
 
 type Status struct {
@@ -208,6 +216,7 @@ type Backend interface {
 	Activate(Config, Config) error
 	Verify(Config) error
 	Status(Config) ([]Status, error)
+	Disconnect(Tunnel, uint32, string) error
 	Logs() ([]string, error)
 	Maintain(Config) error
 	Close() error

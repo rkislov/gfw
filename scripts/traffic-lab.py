@@ -6,9 +6,11 @@ import json
 import os
 from pathlib import Path
 import socket
+import socketserver
 import struct
 import subprocess
 import time
+import threading
 import urllib.parse
 import urllib.request
 
@@ -78,13 +80,51 @@ def close_test_flow():
     assert struct.unpack_from('=i', reply, 16)[0] == 0, reply
 
 
+
+class SIEMReceiver(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+
+    def __init__(self):
+        super().__init__(('127.0.0.1', 0), SIEMHandler, bind_and_activate=False)
+        self.server_bind()
+        self.messages = []
+        self.worker = None
+
+    def start(self):
+        self.server_activate()
+        self.worker = threading.Thread(target=self.serve_forever, daemon=True)
+        self.worker.start()
+
+    def close(self):
+        if self.worker:
+            self.shutdown()
+            self.worker.join()
+        self.server_close()
+
+
+class SIEMHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        self.connection.settimeout(5)
+        while first := self.rfile.read(1):
+            length = first
+            while (char := self.rfile.read(1)) != b' ':
+                if not char or len(length) > 8:
+                    raise ValueError('invalid syslog frame length')
+                length += char
+            message = self.rfile.read(int(length))
+            assert len(message) == int(length)
+            self.server.messages.append(message.decode())
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sources-only', action='store_true')
+    parser.add_argument('--package', help='RPM path inside the test stand')
+    parser.add_argument('--siem', action='store_true')
     parser.add_argument('--no-nflog-conntrack', action='store_true')
     options = parser.parse_args()
     rpmarch = os.uname().machine
-    run('rpm', '-Uvh', f'/work/dist/gfw-0.22.4-1.altp10.{rpmarch}.rpm')
+    run('rpm', '-Uvh', options.package or f'/work/dist/gfw-0.22.5-1.altp10.{rpmarch}.rpm')
     run('ip', 'netns', 'add', 'traffic-peer')
     run('ip', 'link', 'add', 'lan0', 'type', 'veth', 'peer', 'name', 'peer0')
     run('ip', 'link', 'set', 'peer0', 'netns', 'traffic-peer')
@@ -113,6 +153,7 @@ def main():
         panel = subprocess.Popen(['/usr/sbin/gfwd', '-listen', '127.0.0.1:8088',
                                   '-data-dir', '/var/lib/gfw', '-agent-socket', str(STATE / 'agent.sock')],
                                  stdout=panel_out, stderr=panel_out)
+        receiver = None
         try:
             wait(lambda: urllib.request.urlopen('http://127.0.0.1:8088/healthz', timeout=1).status == 200)
             token = Path('/var/lib/gfw/admin.token').read_text().strip()
@@ -198,6 +239,17 @@ def main():
             clickhouse('CREATE DATABASE gfw_lab')
             clickhouse("CREATE USER gfw_lab IDENTIFIED WITH sha256_password BY 'traffic-lab-password'")
             clickhouse('GRANT ALL ON gfw_lab.* TO gfw_lab')
+            if options.siem:
+                receiver = SIEMReceiver()
+                cfg, _ = api('/siem')
+                api('/siem', 'PUT', {
+                    'revision': cfg['revision'], 'enabled': True, 'address': f'127.0.0.1:{receiver.server_address[1]}',
+                    'transport': 'tcp', 'ca_pem': '',
+                    'traffic': {
+                        'conntrack': ['new', 'destroy'], 'nflog': ['drop'], 'ip': '192.0.2.0/24',
+                        'port': 41000, 'protocol': 17, 'rule': 'lab-drop', 'direction': 'input',
+                    },
+                })
             destination['url'] = CLICKHOUSE
             api('/traffic/config', 'PUT', destination)
             wait(lambda: status()['ready'])
@@ -230,6 +282,27 @@ def main():
             clickhouse('INSERT INTO gfw_lab.gfw_traffic_v1 FORMAT JSONEachRow',
                        (json.dumps(accept) + '\n').encode())
             assert len(rule_events()) == count
+            if receiver:
+                def siem_waiting():
+                    status = api('/siem')[0]
+                    return status['traffic_stats']['queued'] > 0 and status.get('traffic_error')
+
+                wait(siem_waiting)
+                receiver.start()
+
+                def got_traffic():
+                    return all(any(f'|{event}|' in message for message in receiver.messages)
+                               for event in ('gfw.conntrack.new', 'gfw.conntrack.destroy', 'gfw.nflog.drop'))
+
+                wait(got_traffic)
+                wait(lambda: api('/siem')[0]['traffic_stats']['queued'] == 0)
+                assert any('|gfw.nflog.drop|' in message and 'cs2=lab-drop' in message and
+                           'externalId=' + drop['event_id'] in message for message in receiver.messages)
+                assert any('|gfw.conntrack.destroy|' in message and 'cs1=' + new['flow_id'] in message
+                           for message in receiver.messages)
+                assert not any('|gfw.nflog.accept|' in message or '|gfw.conntrack.snapshot|' in message
+                               for message in receiver.messages)
+                print('PASS: CEF filters and retry after SIEM outage, full traffic remains in ClickHouse', flush=True)
             print('PASS: ClickHouse delivery, parameterized filters, flow/rule correlation, counters and deduplication', flush=True)
         except Exception:
             print(agent_log.read_text(), panel_log.read_text(), sep='\n', flush=True)
@@ -238,6 +311,8 @@ def main():
                 print([event for event in pending_events() if event['dport'] in (40001, 40002, 40003)], flush=True)
             raise
         finally:
+            if receiver:
+                receiver.close()
             for proc in (panel, agent):
                 proc.terminate()
                 proc.wait(timeout=15)

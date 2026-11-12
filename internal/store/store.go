@@ -83,6 +83,9 @@ func Open(path string) (*Store, error) {
 	if err = s.initFESS(); err != nil {
 		return fail(err)
 	}
+	if err = s.initSIEM(); err != nil {
+		return fail(err)
+	}
 	if version < 10 {
 		if _, err = db.Exec("UPDATE schema_version SET version=10 WHERE version<10"); err != nil {
 			return fail(err)
@@ -147,7 +150,10 @@ func (s *Store) Save(ctx context.Context, revision int64, c policy.Config) (Snap
 	return Snapshot{Revision: revision + 1, Config: c, UpdatedAt: at}, nil
 }
 func (s *Store) Audit(ctx context.Context) ([]Event, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id,at,actor,action,revision FROM audit ORDER BY id DESC LIMIT 100")
+	return s.readAudit(ctx, "SELECT id,at,actor,action,revision FROM audit ORDER BY id DESC LIMIT 100")
+}
+func (s *Store) readAudit(ctx context.Context, query string, args ...any) ([]Event, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

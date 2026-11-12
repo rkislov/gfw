@@ -12,6 +12,7 @@ require (
 	github.com/prometheus/client_golang v1.25.0
 	github.com/semihalev/sdns v1.9.1
 	github.com/stretchr/testify v1.12.1
+	github.com/strongswan/govici v0.8.2
 	github.com/vishvananda/netlink v1.3.1
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.59.0
@@ -34,7 +35,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/josharian/native v1.1.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mdlayher/genetlink v1.3.2 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect

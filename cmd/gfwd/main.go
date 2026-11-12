@@ -153,7 +153,9 @@ func run() error {
 		slog.Error("traffic logging unavailable", "error", err)
 	}
 	var workers sync.WaitGroup
-	workers.Add(5)
+	workers.Add(7)
+	go func() { defer workers.Done(); api.RunSIEMTraffic(ctx) }()
+	go func() { defer workers.Done(); api.RunSIEM(ctx) }()
 	go func() { defer workers.Done(); api.RunTraffic(ctx) }()
 	go func() { defer workers.Done(); api.RunFeed(ctx) }()
 	go func() { defer workers.Done(); api.RunVPNCRLSync(ctx) }()

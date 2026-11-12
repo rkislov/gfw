@@ -1,6 +1,9 @@
 package ipsec
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // establishedPeers reads the human-readable swanctl --list-sas output already
 // used for tunnel status. A row must have an established IKE SA and an installed
@@ -18,7 +21,11 @@ func establishedPeers(details string) []PeerSession {
 		if strings.HasPrefix(line, "gfw-") {
 			finish()
 			peer = PeerSession{}
-			established = strings.Contains(line, ", ESTABLISHED,")
+			_, id, _ := strings.Cut(line, ": #")
+			id, state, _ := strings.Cut(id, ", ")
+			number, err := strconv.ParseUint(id, 10, 32)
+			established = err == nil && strings.HasPrefix(state, "ESTABLISHED,")
+			peer.IKEID = uint32(number)
 			installed = false
 			continue
 		}
