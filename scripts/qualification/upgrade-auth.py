@@ -111,8 +111,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("old")
     parser.add_argument("new")
-    parser.add_argument("--from-version", default="0.22.4")
-    parser.add_argument("--to-version", default="0.22.5")
+    parser.add_argument("--from-version", default="0.22.5")
+    parser.add_argument("--to-version", default="0.22.6")
     args = parser.parse_args()
     assert not (DATA / "identity" / "identity.db").exists()
     install(args.old)
@@ -148,7 +148,7 @@ def main():
         assert api("/audit", headers=headers) == audit
         traffic_cfg = api("/traffic/status", headers=headers)["config"]
         assert traffic_cfg == {key: value for key, value in traffic.items() if key != "password"}
-        if args.to_version == "0.22.5":
+        if args.to_version in ("0.22.5", "0.22.6"):
             siem = api("/siem", headers=headers)
             assert not siem["enabled"] and siem["traffic_stats"]["queued"] == 0
             filters = {"conntrack": ["destroy"], "nflog": ["drop"], "ip": "192.0.2.0/24",
@@ -168,7 +168,7 @@ def main():
     assert (TOKEN_ONLY / "admin.token").read_bytes() == token_only_key
     print(f"PASS: {args.from_version} -> {args.to_version} preserves accounts, recovery tokens, policy, audit and ClickHouse settings", flush=True)
 
-    if args.to_version == "0.22.5":
+    if args.to_version in ("0.22.5", "0.22.6"):
         with controller(DATA, args.to_version) as headers:
             saved_siem = api("/siem", headers=headers)
             assert not saved_siem["enabled"] and saved_siem["traffic"] == filters

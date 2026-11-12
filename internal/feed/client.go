@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"regexp"
 	"slices"
 	"strings"
@@ -18,6 +19,9 @@ import (
 )
 
 const Origin = "https://feed.kislovs.ru"
+
+// Space consecutive requests to stay within the provider's request cadence.
+const feedRequestInterval = 250 * time.Millisecond
 
 type Entry struct {
 	Name       string `json:"name"`
@@ -52,6 +56,7 @@ func (c *Client) fetch(ctx context.Context, key, name string, limit int64) (Entr
 		return e, errors.New("не удалось создать запрос Security Feed")
 	}
 	req.Header.Set("X-Api-Key", key)
+	req.Header.Set("User-Agent", "GFW/1")
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return e, fmt.Errorf("%s: ошибка соединения HTTPS (сеть, сертификат или тайм-аут)", name)
@@ -111,6 +116,13 @@ func (c *Client) Download(ctx context.Context, key string) ([]Entry, error) {
 	}{
 		{"ips.txt", 12 << 20}, {"domains.txt", 12 << 20}, {"iocs.json", 96 << 20},
 	} {
+		timer := time.NewTimer(feedRequestInterval)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
 		entry, err := c.fetch(ctx, key, spec.name, spec.limit)
 		if err != nil {
 			return nil, err
@@ -131,23 +143,36 @@ func (c *Client) Download(ctx context.Context, key string) ([]Entry, error) {
 func normalizeList(raw []byte, ip bool) ([]byte, int, error) {
 	unique := map[string]struct{}{}
 	lines := bufio.NewScanner(bytes.NewReader(raw))
+	invalid, records := 0, 0
 	for lines.Scan() {
 		value := strings.TrimSpace(lines.Text())
 		if value == "" || strings.HasPrefix(value, "#") {
 			continue
 		}
-		normalize := CanonicalDomain
+		records++
 		if ip {
-			normalize = CanonicalIP
+			canonical, err := CanonicalIP(value)
+			if err != nil {
+				return nil, 0, err
+			}
+			unique[canonical] = struct{}{}
+			continue
 		}
-		value, err := normalize(value)
-		if err != nil {
-			return nil, 0, err
+		// The provider's domain projection can contain malformed or non-DNS
+		// indicators. Keep the raw feed and use only valid domains for rules.
+		canonical, err := CanonicalDomain(value)
+		_, ipErr := netip.ParseAddr(canonical)
+		if err != nil || ipErr == nil {
+			invalid++
+			continue
 		}
-		unique[value] = struct{}{}
+		unique[canonical] = struct{}{}
 	}
 	if err := lines.Err(); err != nil {
 		return nil, 0, err
+	}
+	if !ip && (len(unique) == 0 || invalid > records/20) {
+		return nil, 0, ErrInvalidData
 	}
 	values := make([]string, 0, len(unique))
 	for value := range unique {

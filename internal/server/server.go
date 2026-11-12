@@ -341,7 +341,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	respond(w, 200, map[string]bool{"ok": true})
 }
 
-var version = "0.22.5-dev"
+var version = "0.22.6-dev"
 
 func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	snap, err := s.Store.Read(r.Context())

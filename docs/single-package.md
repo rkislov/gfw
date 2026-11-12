@@ -16,7 +16,7 @@ GFW_PACKAGE_ARCH=amd64 make deb-ubuntu-26.04
 # Для ARM64 задайте GFW_PACKAGE_ARCH=arm64.
 ```
 
-Если nfpm отсутствует в PATH, передайте абсолютный путь через `GFW_NFPM`. Версия по умолчанию — 0.22.5; `GFW_PACKAGE_VERSION` позволяет задать следующую версию. Готовые файлы находятся в `dist/`. Сборки для разработки поставляются без подписи пакета.
+Если nfpm отсутствует в PATH, передайте абсолютный путь через `GFW_NFPM`. Версия по умолчанию — 0.22.6; `GFW_PACKAGE_VERSION` позволяет задать следующую версию. Готовые файлы находятся в `dist/`. Сборки для разработки поставляются без подписи пакета.
 
 ## Установка
 
@@ -24,11 +24,11 @@ GFW_PACKAGE_ARCH=amd64 make deb-ubuntu-26.04
 
 ```sh
 # ALT p10
-apt-get install ./gfw-0.22.5-1.altp10.x86_64.rpm
+apt-get install ./gfw-0.22.6-1.altp10.x86_64.rpm
 # ALT p11
-apt-get install ./gfw-0.22.5-1.altp11.x86_64.rpm
+apt-get install ./gfw-0.22.6-1.altp11.x86_64.rpm
 # Ubuntu 26.04
-apt install --no-install-recommends ./gfw_0.22.5-1.ubuntu26.04_amd64.deb
+apt install --no-install-recommends ./gfw_0.22.6-1.ubuntu26.04_amd64.deb
 
 # Первичная настройка на интерфейсе управления LAN
 gfw-setup br-lan

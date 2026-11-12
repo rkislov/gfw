@@ -22,7 +22,7 @@ func TestDownloadTLSAndNormalize(t *testing.T) {
 		"/feeds/v1/iocs.json":    `[{"type":"ip","value":"192.0.2.1","source":"test","reference":"preserve me"}]`,
 	}
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Api-Key") != "fixture-secret" || r.URL.RawQuery != "" {
+		if r.UserAgent() != "GFW/1" || r.Header.Get("X-Api-Key") != "fixture-secret" || r.URL.RawQuery != "" {
 			t.Error("unexpected authentication")
 		}
 		w.Header().Set("X-Feed-Source", "merged")
@@ -61,6 +61,23 @@ func TestRejectRedirectAndInvalidFeed(t *testing.T) {
 	}
 	if _, _, err := normalizeList([]byte("html garbage"), true); !errors.Is(err, ErrInvalidData) {
 		t.Fatalf("accepted invalid IP: %v", err)
+	}
+}
+
+func TestNormalizeProviderDomainsWithMixedIndicators(t *testing.T) {
+	var list strings.Builder
+	for i := range 40 {
+		fmt.Fprintf(&list, "dns-%d.example.org\n", i)
+	}
+	list.WriteString("https://example.org/path\n192.0.2.10\n")
+	normalized, count, err := normalizeList([]byte(list.String()), false)
+	if err != nil || count != 40 || bytes.Contains(normalized, []byte("192.0.2.10")) ||
+		bytes.Contains(normalized, []byte("https://")) {
+		t.Fatalf("unexpected mixed domain result: count=%d err=%v", count, err)
+	}
+	list.WriteString("malformed-indicator\n")
+	if _, _, err := normalizeList([]byte(list.String()), false); !errors.Is(err, ErrInvalidData) {
+		t.Fatalf("accepted excessive invalid indicators: %v", err)
 	}
 }
 

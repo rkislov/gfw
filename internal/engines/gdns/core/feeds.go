@@ -112,6 +112,9 @@ func DownloadFeed(ctx context.Context, f Feed) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if strings.EqualFold(u.Hostname(), "feed.kislovs.ru") {
+		req.Header.Set("User-Agent", "GDNS/1")
+	}
 	if f.Authorization != "" {
 		req.Header.Set("Authorization", feedAuthorization(u, f.Authorization))
 	}

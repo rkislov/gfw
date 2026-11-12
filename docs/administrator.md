@@ -9,10 +9,10 @@ GFW управляет выделенным шлюзом ALT Linux p10/p11 ил�
 
    ```sh
    # ALT Linux p11 (x86_64)
-   apt-get install ./gfw-0.22.5-1.altp11.x86_64.rpm
+   apt-get install ./gfw-0.22.6-1.altp11.x86_64.rpm
    # На ALT p10 выберите RPM с суффиксом altp10.
    # Ubuntu 26.04 (amd64)
-   # apt install --no-install-recommends ./gfw_0.22.5-1.ubuntu26.04_amd64.deb
+   # apt install --no-install-recommends ./gfw_0.22.6-1.ubuntu26.04_amd64.deb
    gfw-setup br-lan
    systemctl status gfw-agent gfwd
    ```
